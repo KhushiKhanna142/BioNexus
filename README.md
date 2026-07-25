@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MOSAIC — Multi-Omics Graph Transformer for Cancer Subtype Classification
 
 Final-year B.Tech (AIML) project, SIES Graduate School of Technology.
@@ -100,3 +101,6 @@ history. Run `dvc pull` after cloning (requires DVC remote access).
 Infra scaffold complete. Pipeline stages (`NotImplementedError` stubs in
 `src/mosaic/`) are pending ML implementation — see `CONTRIBUTING.md` for
 the branching/PR workflow.
+=======
+# bio_nexus
+>>>>>>> 3d187f6d5aa79c7de5e48503878965a13e0ea84b
