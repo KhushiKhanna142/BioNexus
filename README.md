@@ -1,16 +1,15 @@
-<<<<<<< HEAD
-  Multi-Omics Graph Transformer for Cancer Subtype Classification
+# BioNexus – Multi-Omics Graph Transformer for Cancer Subtype Classification
 
 Final-year B.Tech (AIML) project, SIES Graduate School of Technology.
-Fuses gene expression, DNA methylation, and miRNA expression into a unified
-graph and applies graph transformer architectures to classify cancer
-subtypes — with causal-ablation interpretability and cross-cohort
-generalization testing (see `docs/` for full project documentation).
 
-## Repo layout
+BioNexus is a production-grade MLOps pipeline for multi-omics cancer subtype classification. It integrates gene expression, DNA methylation, and miRNA expression into a unified biological graph and leverages Graph Transformer architectures for representation learning. The project emphasizes reproducible ML, experiment tracking, model versioning, deployment automation, causal-ablation interpretability, and cross-cohort generalization.
+
+---
+
+## Repository Layout
 
 ```
-src/mosaic/
+src/bio_nexus/
   data/             Stage 1 — ingestion & preprocessing
   graph/            Stage 2 — gene-interaction graph construction
   encoding/         Stage 3 — graph transformer encoding
@@ -18,89 +17,117 @@ src/mosaic/
   models/           Stage 5a — classification head
   interpretability/ Stage 5b — causal ablation (novelty claim #1)
   evaluation/       metrics, cross-cohort accuracy drop (novelty claim #2)
-  registry/         MLflow model lifecycle: register -> Staging -> Production
-  serving/          FastAPI inference API (loads Production model, exposes
-                     /predict, /health, /metrics)
-  utils/            config, seeding, logging, S3/cloud connector
-  train.py          single entrypoint that wires all stages together
+  registry/         MLflow model lifecycle: register → Staging → Production
+  serving/          FastAPI inference API (/predict, /health, /metrics)
+  utils/            config, seeding, logging, cloud utilities
+  train.py          single pipeline entrypoint
 
-configs/            all hyperparameters, no hardcoding in code
+configs/            training & experiment configurations
 tests/
-  unit/             fast, no external services
-  model/            quality gate — must pass before promote_model.py runs
+  unit/             fast unit tests
+  model/            quality gate before production promotion
 docker/
-  Dockerfile          training image
-  Dockerfile.dev       local dev / jupyter
-  Dockerfile.serving   lean inference-only image
-k8s/                Deployment + Service manifests for the inference API
+  Dockerfile          production training image
+  Dockerfile.dev      development image
+  Dockerfile.serving  inference image
+k8s/                Kubernetes deployment manifests
 .github/workflows/
-  ci.yml            lint, type-check, unit tests, smoke-test, docker build
-  cd.yml            on version tag: quality gate -> promote model ->
-                     build+push training & serving images -> (k8s deploy,
-                     disabled until you have a cluster)
-dvc.yaml            data pipeline — raw TCGA data is DVC-tracked, not git
+  ci.yml            lint, type-check, tests, smoke-test, Docker build
+  cd.yml            model promotion & deployment pipeline
+dvc.yaml            data pipeline definition
 ```
 
-## Model lifecycle
+---
 
-Training run -> MLflow logs metrics/artifacts -> `mosaic.registry.register_model`
-registers it as **Staging** -> `tests/model/` quality gate must pass ->
-`mosaic.registry.promote_model` archives the old Production version and
-promotes Staging -> Production -> the serving API always loads
-`models:/mosaic-subtype-classifier/Production`, so a bad model never
-reaches the API without first passing the gate.
+## Model Lifecycle
 
-## Required secrets (GitHub Actions)
+Training Run
 
-| Secret | Used for |
-|---|---|
-| `MLFLOW_TRACKING_URI` | model registry + experiment tracking (self-hosted or [DagsHub](https://dagshub.com) free tier — good option for a student project since it's hosted and shareable) |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | DVC remote + raw data pulls, if using S3 |
-| `KUBE_CONFIG` | only needed once you enable the k8s deploy job |
+↓
+
+MLflow Experiment Tracking
+
+↓
+
+Register Model (Staging)
+
+↓
+
+Quality Gate Tests
+
+↓
+
+Promote to Production
+
+↓
+
+FastAPI loads
+
+`models:/bio-nexus-subtype-classifier/Production`
+
+Only models that successfully pass automated quality checks are promoted to Production.
+
+---
+
+## Required GitHub Secrets
+
+| Secret | Purpose |
+|---------|---------|
+| `MLFLOW_TRACKING_URI` | MLflow experiment tracking & model registry |
+| `AWS_ACCESS_KEY_ID` | DVC remote storage |
+| `AWS_SECRET_ACCESS_KEY` | DVC remote storage |
+| `KUBE_CONFIG` | Kubernetes deployment (optional) |
+
+---
 
 ## Ownership
 
-MLOps (infra, CI/CD, Docker, configs, experiment tracking, reproducibility)
-is owned end-to-end by the MLOps lead. Model/algorithm code in `data/`,
-`graph/`, `encoding/`, `fusion/`, `interpretability/` is owned by the ML
-lead. See `CODEOWNERS`.
+- **MLOps Lead** — Infrastructure, CI/CD, Docker, DVC, MLflow, deployment, reproducibility.
+- **ML Lead** — Data processing, graph construction, Graph Transformer, fusion, interpretability, evaluation.
+
+---
 
 ## Quickstart
 
 ```bash
-# local dev
 uv pip install -e ".[dev]"
 pre-commit install
 
-# run tests
 pytest tests/unit -v
 
-# local training stack (MLflow + training container)
 docker compose up
 
-# production image
-docker build -f docker/Dockerfile -t mosaic:latest .
+docker build -f docker/Dockerfile -t bio-nexus:latest .
 ```
 
-## Experiment tracking
+---
 
-All training runs log to MLflow (self-hosted via `docker-compose.yml`,
-`http://localhost:5000`). Every run records config, metrics (accuracy,
-macro-F1, AUC-ROC, ablation importance score, cross-cohort accuracy drop),
-and artifacts. No results should be reported that aren't backed by a
-logged MLflow run.
+## Experiment Tracking
+
+Every training run logs to MLflow, recording:
+
+- Hyperparameters
+- Accuracy
+- Macro-F1
+- ROC-AUC
+- Causal-ablation importance
+- Cross-cohort accuracy drop
+- Model artifacts
+
+---
 
 ## Data
 
-Raw and processed omics data are DVC-tracked (`dvc.yaml`), not committed
-to git — genomics data is large and shouldn't live in version control
-history. Run `dvc pull` after cloning (requires DVC remote access).
+Raw and processed multi-omics datasets are tracked with **DVC**, not Git. After cloning:
+
+```bash
+dvc pull
+```
+
+---
 
 ## Status
 
-Infra scaffold complete. Pipeline stages (`NotImplementedError` stubs in
-`src/mosaic/`) are pending ML implementation — see `CONTRIBUTING.md` for
-the branching/PR workflow.
-=======
-# bio_nexus
->>>>>>> 3d187f6d5aa79c7de5e48503878965a13e0ea84b
+Infrastructure scaffold complete.
+
+Pipeline components inside `src/bio_nexus/` are currently under implementation.
