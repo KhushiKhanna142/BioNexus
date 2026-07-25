@@ -1,0 +1,12 @@
+# Every PR touching these paths needs review from the listed owner.
+# Replace @anushka-handle / @friend-handle with actual GitHub usernames.
+/src/mosaic/data/            @friend-handle
+/src/mosaic/graph/           @friend-handle
+/src/mosaic/encoding/        @friend-handle
+/src/mosaic/fusion/          @friend-handle
+/src/mosaic/models/          @friend-handle
+/src/mosaic/interpretability/ @friend-handle
+/docker/                     @anushka-handle
+/.github/                    @anushka-handle
+/configs/                    @anushka-handle
+/dvc.yaml                    @anushka-handle

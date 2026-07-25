@@ -1,0 +1,11 @@
+data/raw/
+data/processed/
+mlruns/
+.git/
+.venv/
+__pycache__/
+*.pyc
+notebooks/.ipynb_checkpoints/
+tests/
+.pytest_cache/
+.mypy_cache/

@@ -1,0 +1,86 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  quality-gate-and-promote:
+    # Model promotion is gated behind tests, not behind "training finished."
+    # If this job fails, the tag build still runs (image gets built) but
+    # the Production alias in MLflow does NOT move -- the serving layer
+    # keeps serving the last good model.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -e .
+      - name: Run model quality gate
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: |
+          export PYTHONPATH=src
+          pytest tests/model -v
+      - name: Promote Staging -> Production
+        if: success()
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        run: |
+          export PYTHONPATH=src
+          python -m mosaic.registry.promote_model
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: quality-gate-and-promote
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push training image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}:latest
+      - name: Build and push serving image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.serving
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-serving:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}-serving:latest
+
+  deploy-to-k8s:
+    # Requires a real cluster + kubeconfig secret. Leave this job disabled
+    # (or delete it) until you actually have a cluster to deploy to --
+    # a red X on every tag push for a step you can't run yet is worse
+    # than not having the step.
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: false  # flip to `if: true` once KUBE_CONFIG secret is set up
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+      - name: Apply manifests
+        run: kubectl apply -f k8s/

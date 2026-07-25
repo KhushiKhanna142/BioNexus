@@ -1,0 +1,23 @@
+# Tiny/fast config used by CI to sanity-check the pipeline runs end-to-end.
+# NEVER use this for real results — it exists purely to catch broken imports,
+# shape mismatches, and config errors before they hit a real GPU run.
+data:
+  tcga_project_ids: ["TCGA-BRCA"]
+  raw_data_dir: "tests/fixtures/raw"
+  processed_data_dir: "tests/fixtures/processed"
+  random_seed: 42
+
+model:
+  architecture: "gat"
+  hidden_dim: 16
+  num_layers: 1
+  num_heads: 2
+  dropout: 0.0
+
+training:
+  batch_size: 4
+  learning_rate: 1e-3
+  max_epochs: 1
+  early_stopping_patience: 1
+  device: "cpu"
+  mlflow_experiment_name: "mosaic-ci-smoke-test"

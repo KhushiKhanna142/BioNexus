@@ -1,0 +1,21 @@
+data:
+  tcga_project_ids: ["TCGA-BRCA"]
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  held_out_cohort: "METABRIC"
+  random_seed: 42
+
+model:
+  architecture: "graphormer"
+  hidden_dim: 256
+  num_layers: 4
+  num_heads: 8
+  dropout: 0.1
+
+training:
+  batch_size: 32
+  learning_rate: 1e-4
+  max_epochs: 100
+  early_stopping_patience: 10
+  device: "cuda"
+  mlflow_experiment_name: "mosaic-cancer-subtype"

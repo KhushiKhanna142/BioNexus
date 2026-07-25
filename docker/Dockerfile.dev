@@ -1,0 +1,14 @@
+# Dev image: includes dev deps, jupyter, mounted source for live-reload.
+FROM python:3.11-slim
+
+WORKDIR /workspace
+RUN pip install --no-cache-dir uv
+
+COPY pyproject.toml .
+RUN uv pip install --system --no-cache ".[dev]" && \
+    uv pip install --system --no-cache jupyterlab
+
+COPY . .
+ENV PYTHONPATH=/workspace/src
+
+CMD ["bash"]
