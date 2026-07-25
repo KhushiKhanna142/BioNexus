@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-# MOSAIC — Multi-Omics Graph Transformer for Cancer Subtype Classification
+  Multi-Omics Graph Transformer for Cancer Subtype Classification
 
 Final-year B.Tech (AIML) project, SIES Graduate School of Technology.
 Fuses gene expression, DNA methylation, and miRNA expression into a unified
