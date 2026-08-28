@@ -1,8 +1,5 @@
 # BioNexus – Multi-Omics Graph Transformer for Cancer Subtype Classification
 
-Final-year B.Tech (AIML) project, SIES Graduate School of Technology.
-Prepared by: **Khushi Khanna** (2025–26)
-
 BioNexus is a production-grade MLOps pipeline for multi-omics cancer subtype classification. It integrates gene expression (RNA-seq), DNA methylation, and miRNA expression into a unified biological graph and leverages Graph Transformer architectures for representation learning.
 
 ---
