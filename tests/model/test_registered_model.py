@@ -26,14 +26,14 @@ import pytest
 def test_staging_model_loads():
     import mlflow
 
-    from mosaic.registry.register_model import MODEL_NAME
+    from bio_nexus.registry.register_model import MODEL_NAME
 
     mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
     model = mlflow.pyfunc.load_model(f"models:/{MODEL_NAME}/Staging")
     assert model is not None
 
 
-@pytest.mark.skip(reason="Enable once mosaic.fusion + mosaic.models.classifier are implemented")
+@pytest.mark.skip(reason="Enable once bio_nexus.fusion + bio_nexus.models.classifier are implemented")
 def test_staging_model_beats_majority_baseline():
     """Placeholder: assert staging model accuracy > majority-class accuracy
     on tests/fixtures/held_out_sample.parquet once that fixture exists."""

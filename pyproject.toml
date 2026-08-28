@@ -1,5 +1,5 @@
 [project]
-name = "mosaic"
+name = "bio_nexus"
 version = "0.1.0"
 description = "Multi-Omics Graph Transformer for Cancer Subtype Classification"
 requires-python = ">=3.11"
@@ -36,7 +36,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mosaic"]
+packages = ["src/bio_nexus"]
 
 [tool.ruff]
 line-length = 100
@@ -52,4 +52,4 @@ disallow_untyped_defs = false  # tighten to true once ML stubs are implemented
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=src/mosaic --cov-report=term-missing"
+addopts = "--cov=src/bio_nexus --cov-report=term-missing"

@@ -1,24 +1,24 @@
-# Kubernetes Deployment for the MOSAIC inference API.
+# Kubernetes Deployment for the BioNexus inference API.
 # Apply with: kubectl apply -f k8s/
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mosaic-inference
+  name: bionexus-inference
   labels:
-    app: mosaic-inference
+    app: bionexus-inference
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: mosaic-inference
+      app: bionexus-inference
   template:
     metadata:
       labels:
-        app: mosaic-inference
+        app: bionexus-inference
     spec:
       containers:
-        - name: mosaic-inference
-          image: ghcr.io/OWNER/mosaic:latest   # replace OWNER after first push
+        - name: bionexus-inference
+          image: ghcr.io/OWNER/bionexus:latest   # replace OWNER after first push
           ports:
             - containerPort: 8000
           resources:
@@ -32,7 +32,7 @@ spec:
             - name: MLFLOW_TRACKING_URI
               valueFrom:
                 secretKeyRef:
-                  name: mosaic-secrets
+                  name: bionexus-secrets
                   key: MLFLOW_TRACKING_URI
           livenessProbe:
             httpGet:

@@ -20,4 +20,4 @@ training:
   max_epochs: 1
   early_stopping_patience: 1
   device: "cpu"
-  mlflow_experiment_name: "mosaic-ci-smoke-test"
+  mlflow_experiment_name: "bionexus-ci-smoke-test"

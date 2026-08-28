@@ -60,7 +60,7 @@ jobs:
       - name: Run end-to-end smoke test (CPU, tiny config)
         run: |
           export PYTHONPATH=src
-          python -m mosaic.train --config configs/training/smoke_test.yaml || echo "Smoke test wired but pipeline stages pending ML implementation"
+          python -m bio_nexus.train --config configs/training/smoke_test.yaml || echo "Smoke test wired but pipeline stages pending ML implementation"
 
   docker-build:
     runs-on: ubuntu-latest

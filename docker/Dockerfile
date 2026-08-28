@@ -11,7 +11,7 @@ RUN uv pip install --system --no-cache .
 FROM python:3.11-slim AS runtime
 
 # Non-root user — never run training/inference containers as root in prod.
-RUN useradd --create-home --shell /bin/bash mosaic
+RUN useradd --create-home --shell /bin/bash bionexus
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
@@ -21,7 +21,7 @@ COPY src/ ./src/
 COPY configs/ ./configs/
 ENV PYTHONPATH=/app/src
 
-USER mosaic
+USER bionexus
 
-ENTRYPOINT ["python", "-m", "mosaic.train"]
+ENTRYPOINT ["python", "-m", "bio_nexus.train"]
 CMD ["--config", "configs/training/default.yaml"]

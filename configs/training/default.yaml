@@ -18,4 +18,4 @@ training:
   max_epochs: 100
   early_stopping_patience: 10
   device: "cuda"
-  mlflow_experiment_name: "mosaic-cancer-subtype"
+  mlflow_experiment_name: "bionexus-cancer-subtype"

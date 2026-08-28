@@ -1,34 +1,34 @@
-# DVC pipeline — mirrors the 5-stage MOSAIC architecture.
+# DVC pipeline — mirrors the 5-stage BioNexus architecture.
 # Run `dvc repro` to execute only the stages whose inputs actually changed.
 stages:
   ingest:
-    cmd: python -m mosaic.data.ingestion --config configs/data/default.yaml
+    cmd: python -m bio_nexus.data.ingestion --config configs/data/default.yaml
     deps:
-      - src/mosaic/data/ingestion.py
+      - src/bio_nexus/data/ingestion.py
     outs:
       - data/processed/aligned_omics.parquet
 
   build_graph:
-    cmd: python -m mosaic.graph.construction --config configs/data/default.yaml
+    cmd: python -m bio_nexus.graph.construction --config configs/data/default.yaml
     deps:
-      - src/mosaic/graph/construction.py
+      - src/bio_nexus/graph/construction.py
       - data/processed/aligned_omics.parquet
     outs:
       - data/processed/gene_graph.gpickle
 
   train:
-    cmd: python -m mosaic.train --config configs/training/default.yaml
+    cmd: python -m bio_nexus.train --config configs/training/default.yaml
     deps:
-      - src/mosaic/train.py
+      - src/bio_nexus/train.py
       - data/processed/gene_graph.gpickle
     outs:
-      - models/mosaic_latest.pt
+      - models/bionexus_latest.pt
     metrics:
       - metrics/eval_metrics.json:
           cache: false
 
   register_model:
-    cmd: python -m mosaic.registry.register_model
+    cmd: python -m bio_nexus.registry.register_model
     deps:
-      - src/mosaic/registry/register_model.py
+      - src/bio_nexus/registry/register_model.py
       - reports/experiment_info.json

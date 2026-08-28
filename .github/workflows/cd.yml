@@ -31,7 +31,7 @@ jobs:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
         run: |
           export PYTHONPATH=src
-          python -m mosaic.registry.promote_model
+          python -m bio_nexus.registry.promote_model
 
   build-and-push:
     runs-on: ubuntu-latest

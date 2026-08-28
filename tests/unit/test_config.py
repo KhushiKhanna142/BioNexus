@@ -1,15 +1,15 @@
 """Sanity tests for the config system — these should never break silently."""
-from mosaic.utils.config import MosaicConfig
+from bio_nexus.utils.config import BioNexusConfig
 
 
 def test_default_config_loads():
-    cfg = MosaicConfig()
+    cfg = BioNexusConfig()
     assert cfg.model.hidden_dim == 256
     assert cfg.training.device in {"cpu", "cuda"}
 
 
 def test_config_is_frozen():
-    cfg = MosaicConfig()
+    cfg = BioNexusConfig()
     try:
         cfg.model.hidden_dim = 999
         raised = False

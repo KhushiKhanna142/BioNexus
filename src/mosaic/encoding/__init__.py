@@ -1,1 +1,0 @@
-"""MOSAIC :: encoding module."""

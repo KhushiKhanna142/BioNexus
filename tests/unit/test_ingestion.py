@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from mosaic.data.ingestion import align_patients_across_layers
+from bio_nexus.data.ingestion import align_patients_across_layers
 
 
 def test_align_patients_keeps_only_common_ids():

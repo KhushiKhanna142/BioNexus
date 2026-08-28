@@ -1,8 +1,8 @@
-# Contributing to MOSAIC
+# Contributing to BioNexus
 
 ## Setup
 ```bash
-git clone <repo-url> && cd mosaic
+git clone <repo-url> && cd bio_nexus
 uv pip install -e ".[dev]"
 pre-commit install
 ```
@@ -20,7 +20,7 @@ pytest tests/unit -v
 CI will re-run all of this anyway, but catching it locally is faster than waiting on GitHub Actions.
 
 ## Experiment tracking
-Every training run must go through `mosaic.train`, which auto-logs to MLflow.
+Every training run must go through `bio_nexus.train`, which auto-logs to MLflow.
 Don't run ad-hoc training scripts that bypass logging — if it's not in MLflow, it didn't happen, as far as the report is concerned.
 
 ## Data
