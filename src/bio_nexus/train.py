@@ -27,7 +27,10 @@ logger = get_logger(__name__)
 
 def load_config(path: str) -> BioNexusConfig:
     raw = OmegaConf.load(path)
-    return BioNexusConfig(**OmegaConf.to_container(raw, resolve=True))
+    container = OmegaConf.to_container(raw, resolve=True)
+    if not isinstance(container, dict):
+        raise ValueError(f"Configuration file at {path} must be a dictionary/mapping.")
+    return BioNexusConfig(**container)
 
 
 def main(config_path: str) -> None:
