@@ -3,7 +3,9 @@
 Deliberately NOT print(). Anything that reaches production must be
 gre­ppable/queryable in log aggregation, not scattered print statements.
 """
+
 from __future__ import annotations
+
 import logging
 import sys
 

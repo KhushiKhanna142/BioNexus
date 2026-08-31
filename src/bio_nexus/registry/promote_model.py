@@ -11,6 +11,7 @@ XGBoost baseline)." See .github/workflows/ci.yml for the gating.
 Usage:
     python -m bio_nexus.registry.promote_model
 """
+
 from __future__ import annotations
 
 import os
@@ -27,7 +28,7 @@ logger = get_logger(__name__)
 def promote_latest_staging_to_production(model_name: str) -> str:
     uri = os.getenv("MLFLOW_TRACKING_URI")
     if not uri:
-        raise EnvironmentError("MLFLOW_TRACKING_URI is not set.")
+        raise OSError("MLFLOW_TRACKING_URI is not set.")
     mlflow.set_tracking_uri(uri)
 
     client = MlflowClient()
@@ -45,9 +46,7 @@ def promote_latest_staging_to_production(model_name: str) -> str:
         )
         logger.info(f"Archived previous Production version {version.version}")
 
-    client.transition_model_version_stage(
-        name=model_name, version=new_version, stage="Production"
-    )
+    client.transition_model_version_stage(name=model_name, version=new_version, stage="Production")
     logger.info(f"{model_name} v{new_version} promoted to Production")
     return new_version
 

@@ -13,8 +13,9 @@ Provides modular functions for:
 from __future__ import annotations
 
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 
 def build_filename_index(data_dir: Path) -> dict[str, Path]:
@@ -35,8 +36,9 @@ def count_lines(fpath: Path) -> int:
 
 def read_rna_file(fpath: Path) -> pd.Series:
     """Read GDC STAR-Counts RNA-seq file."""
-    df = pd.read_csv(fpath, sep="\t", skiprows=[0, 2, 3, 4, 5], header=0,
-                     usecols=["gene_id", "tpm_unstranded"])
+    df = pd.read_csv(
+        fpath, sep="\t", skiprows=[0, 2, 3, 4, 5], header=0, usecols=["gene_id", "tpm_unstranded"]
+    )
     return df.set_index("gene_id")["tpm_unstranded"]
 
 
@@ -46,8 +48,9 @@ def read_mirna_file(fpath: Path) -> pd.Series:
     return df.set_index("miRNA_ID")["read_count"]
 
 
-def load_matrix(mapping: pd.DataFrame, file_col: str, data_dir: Path, layer_name: str,
-                file_reader) -> pd.DataFrame:
+def load_matrix(
+    mapping: pd.DataFrame, file_col: str, data_dir: Path, layer_name: str, file_reader
+) -> pd.DataFrame:
     """Build patients x features matrix for an omics layer."""
     file_index = build_filename_index(data_dir)
     rows = {}
@@ -87,7 +90,9 @@ def load_methylation_matrix(mapping: pd.DataFrame, data_dir: Path) -> pd.DataFra
     counts_series = pd.Series(line_counts)
     dominant_n_lines = counts_series.value_counts().index[0]
 
-    kept_case_files = [(cid, fpath) for cid, fpath in case_files if line_counts[cid] == dominant_n_lines]
+    kept_case_files = [
+        (cid, fpath) for cid, fpath in case_files if line_counts[cid] == dominant_n_lines
+    ]
 
     ref_case_id, ref_fpath = kept_case_files[0]
     ref = pd.read_csv(ref_fpath, sep="\t", header=None, names=["probe_id", "beta"], usecols=[0, 1])
@@ -95,11 +100,15 @@ def load_methylation_matrix(mapping: pd.DataFrame, data_dir: Path) -> pd.DataFra
     n_probes = len(probe_ids)
 
     values = np.full((len(kept_case_files), n_probes), np.nan, dtype=np.float32)
-    case_ids = []
+    case_ids: list[str] = []
 
-    for i, (case_id, fpath) in enumerate(kept_case_files):
+    for case_id, fpath in kept_case_files:
         try:
-            beta = pd.read_csv(fpath, sep="\t", header=None, usecols=[1]).iloc[:, 0].to_numpy(dtype=np.float32)
+            beta = (
+                pd.read_csv(fpath, sep="\t", header=None, usecols=[1])
+                .iloc[:, 0]
+                .to_numpy(dtype=np.float32)
+            )
             if len(beta) != n_probes:
                 continue
             values[len(case_ids)] = beta
@@ -107,7 +116,7 @@ def load_methylation_matrix(mapping: pd.DataFrame, data_dir: Path) -> pd.DataFra
         except Exception:
             continue
 
-    values = values[:len(case_ids)]
+    values = values[: len(case_ids)]
     matrix = pd.DataFrame(values, index=case_ids, columns=probe_ids)
     matrix.index.name = "patient_id"
     return matrix

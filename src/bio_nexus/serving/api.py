@@ -16,6 +16,7 @@ Endpoints:
     GET  /metrics   Prometheus scrape endpoint
     POST /predict   subtype prediction for one patient's multi-omics record
 """
+
 from __future__ import annotations
 
 import os
@@ -23,7 +24,7 @@ import time
 
 import mlflow
 from fastapi import FastAPI, HTTPException, Response
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel
 
 from bio_nexus.registry.register_model import MODEL_NAME
@@ -32,12 +33,8 @@ from bio_nexus.utils.logging import get_logger
 logger = get_logger(__name__)
 app = FastAPI(title="BioNexus Inference API", version="0.1.0")
 
-PREDICTION_COUNT = Counter(
-    "bionexus_predictions_total", "Total prediction requests", ["status"]
-)
-PREDICTION_LATENCY = Histogram(
-    "bionexus_prediction_latency_seconds", "Prediction request latency"
-)
+PREDICTION_COUNT = Counter("bionexus_predictions_total", "Total prediction requests", ["status"])
+PREDICTION_LATENCY = Histogram("bionexus_prediction_latency_seconds", "Prediction request latency")
 
 _model = None  # lazy-loaded on first request / startup
 
@@ -64,7 +61,7 @@ class PredictResponse(BaseModel):
 def _load_production_model():
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if not tracking_uri:
-        raise EnvironmentError("MLFLOW_TRACKING_URI is not set.")
+        raise OSError("MLFLOW_TRACKING_URI is not set.")
     mlflow.set_tracking_uri(tracking_uri)
     model_uri = f"models:/{MODEL_NAME}/Production"
     logger.info(f"Loading model from {model_uri}")
@@ -106,6 +103,6 @@ def predict(request: PredictRequest) -> PredictResponse:
         raise NotImplementedError("Wire this to bio_nexus.fusion + bio_nexus.models.classifier")
     except NotImplementedError:
         PREDICTION_COUNT.labels(status="error").inc()
-        raise HTTPException(status_code=501, detail="Model inference not yet implemented")
+        raise HTTPException(status_code=501, detail="Model inference not yet implemented") from None
     finally:
         PREDICTION_LATENCY.observe(time.time() - start)

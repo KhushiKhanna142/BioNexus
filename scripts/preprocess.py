@@ -12,11 +12,11 @@ Usage:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # ---- BASE DIRECTORY (Project Root) ----
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,8 +30,8 @@ OUT_DIR = BASE_DIR / "data" / "processed"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---- TUNABLE PARAMS ----
-METH_TOP_N_PROBES = 5000        # variance-filter methylation down to this many probes
-MISSING_COL_THRESHOLD = 0.20    # drop a feature if missing in more than this fraction of patients
+METH_TOP_N_PROBES = 5000  # variance-filter methylation down to this many probes
+MISSING_COL_THRESHOLD = 0.20  # drop a feature if missing in more than this fraction of patients
 
 
 def build_filename_index(data_dir: Path) -> dict[str, Path]:
@@ -43,8 +43,13 @@ def build_filename_index(data_dir: Path) -> dict[str, Path]:
     return index
 
 
-def load_matrix(mapping: pd.DataFrame, file_col: str, data_dir: Path, layer_name: str,
-                 file_reader: Callable[[Path], pd.Series]) -> pd.DataFrame:
+def load_matrix(
+    mapping: pd.DataFrame,
+    file_col: str,
+    data_dir: Path,
+    layer_name: str,
+    file_reader: Callable[[Path], pd.Series],
+) -> pd.DataFrame:
     """Build a patients x features matrix for one omics layer."""
     print(f"[{layer_name}] indexing {data_dir} ...")
     file_index = build_filename_index(data_dir)
@@ -71,8 +76,9 @@ def load_matrix(mapping: pd.DataFrame, file_col: str, data_dir: Path, layer_name
 
 def read_rna_file(fpath: Path) -> pd.Series:
     """GDC STAR-Counts RNA-seq file."""
-    df = pd.read_csv(fpath, sep="\t", skiprows=[0, 2, 3, 4, 5], header=0,
-                      usecols=["gene_id", "tpm_unstranded"])
+    df = pd.read_csv(
+        fpath, sep="\t", skiprows=[0, 2, 3, 4, 5], header=0, usecols=["gene_id", "tpm_unstranded"]
+    )
     return df.set_index("gene_id")["tpm_unstranded"]
 
 
@@ -116,14 +122,20 @@ def load_methylation_matrix(mapping: pd.DataFrame, data_dir: Path) -> pd.DataFra
     platform_counts = counts_series.value_counts()
     dominant_n_lines = platform_counts.index[0]
     print(f"[meth] platform line-count distribution:\n{platform_counts.to_string()}")
-    print(f"[meth] using dominant platform: {dominant_n_lines} lines "
-          f"({platform_counts.iloc[0]} of {len(case_files)} patients)")
+    print(
+        f"[meth] using dominant platform: {dominant_n_lines} lines "
+        f"({platform_counts.iloc[0]} of {len(case_files)} patients)"
+    )
 
-    kept_case_files = [(cid, fpath) for cid, fpath in case_files if line_counts[cid] == dominant_n_lines]
+    kept_case_files = [
+        (cid, fpath) for cid, fpath in case_files if line_counts[cid] == dominant_n_lines
+    ]
     n_dropped = len(case_files) - len(kept_case_files)
     if n_dropped:
-        print(f"[meth] dropping {n_dropped} patients on a different array platform "
-              f"(different probe set - can't be stacked with the majority)")
+        print(
+            f"[meth] dropping {n_dropped} patients on a different array platform "
+            f"(different probe set - can't be stacked with the majority)"
+        )
 
     ref_case_id, ref_fpath = kept_case_files[0]
     ref = pd.read_csv(ref_fpath, sep="\t", header=None, names=["probe_id", "beta"], usecols=[0, 1])
@@ -134,21 +146,27 @@ def load_methylation_matrix(mapping: pd.DataFrame, data_dir: Path) -> pd.DataFra
     values = np.full((len(kept_case_files), n_probes), np.nan, dtype=np.float32)
     case_ids: list[str] = []
 
-    for i, (case_id, fpath) in enumerate(kept_case_files):
+    for _, (case_id, fpath) in enumerate(kept_case_files):
         try:
-            beta = pd.read_csv(fpath, sep="\t", header=None, usecols=[1]).iloc[:, 0].to_numpy(dtype=np.float32)
+            beta = (
+                pd.read_csv(fpath, sep="\t", header=None, usecols=[1])
+                .iloc[:, 0]
+                .to_numpy(dtype=np.float32)
+            )
             if len(beta) != n_probes:
-                print(f"[meth] WARNING: {case_id} has {len(beta)} rows, expected {n_probes} - skipped")
+                print(
+                    f"[meth] WARNING: {case_id} has {len(beta)} rows, expected {n_probes} - skipped"
+                )
                 continue
             values[len(case_ids)] = beta
             case_ids.append(case_id)
         except Exception as e:
             print(f"[meth] WARNING: failed to read {fpath.name} for {case_id}: {e}")
 
-        if (i + 1) % 100 == 0:
-            print(f"[meth] processed {i + 1}/{len(kept_case_files)} files...")
+        if (len(case_ids)) % 100 == 0:
+            print(f"[meth] processed {len(case_ids)}/{len(kept_case_files)} files...")
 
-    values = values[:len(case_ids)]
+    values = values[: len(case_ids)]
     matrix = pd.DataFrame(values, index=case_ids, columns=probe_ids)
     matrix.index.name = "patient_id"
     print(f"[meth] built matrix: {matrix.shape[0]} patients x {matrix.shape[1]} features")
@@ -168,8 +186,11 @@ def clean_missing(matrix: pd.DataFrame, layer_name: str) -> pd.DataFrame:
     dropped = matrix.shape[1] - len(keep_cols)
     matrix = matrix[keep_cols]
     matrix = matrix.fillna(matrix.median(axis=0))
-    print(f"[{layer_name}] dropped {dropped} features (>{int(MISSING_COL_THRESHOLD*100)}% missing), "
-          f"median-imputed the rest -> {matrix.shape[1]} features remain")
+    print(
+        f"[{layer_name}] dropped {dropped} features "
+        f"(>{int(MISSING_COL_THRESHOLD * 100)}% missing), "
+        f"median-imputed the rest -> {matrix.shape[1]} features remain"
+    )
     return matrix
 
 
@@ -205,7 +226,10 @@ def main() -> None:
 
     shared_patients = rna.index.intersection(mirna.index).intersection(meth.index)
     shared_patients = sorted(shared_patients)
-    print(f"\nShared patient index across all 3 layers (post file-read): {len(shared_patients)} patients")
+    print(
+        "\nShared patient index across all 3 layers (post file-read): "
+        f"{len(shared_patients)} patients"
+    )
 
     rna = rna.loc[shared_patients]
     mirna = mirna.loc[shared_patients]
@@ -218,7 +242,7 @@ def main() -> None:
         OUT_DIR / "shared_patient_index.csv", index=False
     )
 
-    print(f"\nSaved:")
+    print("\nSaved:")
     print(f"  {OUT_DIR / 'rna_matrix.csv'}   ({rna.shape[0]} x {rna.shape[1]})")
     print(f"  {OUT_DIR / 'mirna_matrix.csv'} ({mirna.shape[0]} x {mirna.shape[1]})")
     print(f"  {OUT_DIR / 'meth_matrix.csv'}  ({meth.shape[0]} x {meth.shape[1]})")

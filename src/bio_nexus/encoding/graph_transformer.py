@@ -7,7 +7,9 @@ MLOps contract: this module must accept `configs/model/*.yaml` params only
 via a typed config object (see bio_nexus.utils.config), never via free-floating
 kwargs, so W&B/MLflow can log the exact config used for every run.
 """
+
 from __future__ import annotations
+
 import torch
 from torch import nn
 

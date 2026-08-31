@@ -1,6 +1,9 @@
 """Reproducibility utilities. Call set_seed() at the top of every entrypoint."""
+
 from __future__ import annotations
+
 import random
+
 import numpy as np
 import torch
 

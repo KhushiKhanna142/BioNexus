@@ -3,7 +3,9 @@ Stage 5a — Classification head.
 
 Owner: ML side. Takes fused patient embedding -> cancer subtype logits.
 """
+
 from __future__ import annotations
+
 import torch
 from torch import nn
 

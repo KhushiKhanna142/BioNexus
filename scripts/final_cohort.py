@@ -11,8 +11,9 @@ Usage:
     python scripts/final_cohort.py
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROC_DIR = BASE_DIR / "data" / "processed"
@@ -40,7 +41,10 @@ def main():
 
     missing_in_omics = final_ids - (set(rna.index) & set(mirna.index) & set(meth.index))
     if missing_in_omics:
-        print(f"[WARNING] {len(missing_in_omics)} labeled patients missing from omics matrices - dropping them too")
+        print(
+            f"[WARNING] {len(missing_in_omics)} labeled patients missing "
+            "from omics matrices - dropping them too"
+        )
         final_ids -= missing_in_omics
 
     final_ids = sorted(final_ids)
@@ -49,7 +53,12 @@ def main():
     rna_final = rna.loc[final_ids]
     mirna_final = mirna.loc[final_ids]
     meth_final = meth.loc[final_ids]
-    labels_final = labeled[labeled["patient_id"].isin(final_ids)].set_index("patient_id").loc[final_ids].reset_index()
+    labels_final = (
+        labeled[labeled["patient_id"].isin(final_ids)]
+        .set_index("patient_id")
+        .loc[final_ids]
+        .reset_index()
+    )
 
     rna_final.to_csv(OUT_DIR / "rna_matrix_final.csv")
     mirna_final.to_csv(OUT_DIR / "mirna_matrix_final.csv")
@@ -62,7 +71,7 @@ def main():
     print(f"  mirna_matrix_final.csv ({mirna_final.shape[0]} x {mirna_final.shape[1]})")
     print(f"  meth_matrix_final.csv  ({meth_final.shape[0]} x {meth_final.shape[1]})")
     print(f"  labels_final.csv       ({len(labels_final)} patients)")
-    print(f"\nSubtype distribution in final cohort:")
+    print("\nSubtype distribution in final cohort:")
     print(labels_final["subtype"].value_counts().to_string())
 
 

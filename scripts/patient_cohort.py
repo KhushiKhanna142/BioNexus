@@ -13,15 +13,26 @@ Usage:
 from __future__ import annotations
 
 from pathlib import Path
+
 import pandas as pd
 
 # ---- BASE DIRECTORY (Project Root) ----
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ---- SAMPLE SHEETS ----
-RNA_SHEET = BASE_DIR / "data" / "sample_sheets" / "RNA SAMPLE SHEET" / "gdc_sample_sheet.2026-08-23.tsv"
-MIRNA_SHEET = BASE_DIR / "data" / "sample_sheets" / "MIRNA SAMPLE SHEET" / "gdc_sample_sheet.2026-08-23.tsv"
-METH_SHEET = BASE_DIR / "data" / "sample_sheets" / "METHYLATION SAMPLE SHEET" / "gdc_sample_sheet.2026-08-23 (1).tsv"
+RNA_SHEET = (
+    BASE_DIR / "data" / "sample_sheets" / "RNA SAMPLE SHEET" / "gdc_sample_sheet.2026-08-23.tsv"
+)
+MIRNA_SHEET = (
+    BASE_DIR / "data" / "sample_sheets" / "MIRNA SAMPLE SHEET" / "gdc_sample_sheet.2026-08-23.tsv"
+)
+METH_SHEET = (
+    BASE_DIR
+    / "data"
+    / "sample_sheets"
+    / "METHYLATION SAMPLE SHEET"
+    / "gdc_sample_sheet.2026-08-23 (1).tsv"
+)
 
 # Fallback to root sample sheet paths if moved
 if not RNA_SHEET.exists():
@@ -48,7 +59,9 @@ def load_sheet(path: Path, layer_name: str, file_keyword: str | None = None) -> 
         df = df[df["File Name"].str.contains(file_keyword, na=False)]
 
     df = df[["Case ID", "Sample ID", "File Name", "Tissue Type", "Tumor Descriptor"]].copy()
-    df = df.rename(columns={"File Name": f"{layer_name}_file", "Sample ID": f"{layer_name}_sample_id"})
+    df = df.rename(
+        columns={"File Name": f"{layer_name}_file", "Sample ID": f"{layer_name}_sample_id"}
+    )
     df[f"{layer_name}_present"] = True
 
     n_total = len(df)

@@ -13,6 +13,7 @@ Extend this as the ML side's interface solidifies -- right now it
 documents the *shape* of the gate so CI has something real to enforce
 from day one, even before the model itself exists.
 """
+
 import os
 
 import pytest
@@ -33,7 +34,9 @@ def test_staging_model_loads():
     assert model is not None
 
 
-@pytest.mark.skip(reason="Enable once bio_nexus.fusion + bio_nexus.models.classifier are implemented")
+@pytest.mark.skip(
+    reason="Enable once bio_nexus.fusion + bio_nexus.models.classifier are implemented"
+)
 def test_staging_model_beats_majority_baseline():
     """Placeholder: assert staging model accuracy > majority-class accuracy
     on tests/fixtures/held_out_sample.parquet once that fixture exists."""

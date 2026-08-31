@@ -10,6 +10,7 @@ Design principle: this file orchestrates; it does not contain model or
 data logic itself. If you're writing algorithm code here, it belongs in
 one of the stage modules instead.
 """
+
 from __future__ import annotations
 
 import argparse

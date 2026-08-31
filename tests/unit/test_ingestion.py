@@ -1,4 +1,5 @@
 """Unit tests for data ingestion contracts (Stage 1)."""
+
 import pandas as pd
 import pytest
 

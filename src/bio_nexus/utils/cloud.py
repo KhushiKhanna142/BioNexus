@@ -9,6 +9,7 @@ variables only (set as GitHub Actions secrets in CI, or locally via
 into a script, stop -- that key is now in your shell history and
 possibly your git diff.
 """
+
 from __future__ import annotations
 
 import os
@@ -29,9 +30,7 @@ def get_s3_client():
     access_key = os.getenv("AWS_ACCESS_KEY_ID")
     secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     if not access_key or not secret_key:
-        raise EnvironmentError(
-            "AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not set in environment."
-        )
+        raise OSError("AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not set in environment.")
     return boto3.client(
         "s3",
         aws_access_key_id=access_key,

@@ -15,6 +15,7 @@ scriptable in CI rather than a manual "copy the run_id from the UI" step.
 Usage:
     python -m bio_nexus.registry.register_model
 """
+
 from __future__ import annotations
 
 import json
@@ -45,7 +46,7 @@ def _set_tracking_uri() -> None:
     """
     uri = os.getenv("MLFLOW_TRACKING_URI")
     if not uri:
-        raise EnvironmentError(
+        raise OSError(
             "MLFLOW_TRACKING_URI is not set. Point it at your local MLflow "
             "server or a hosted tracking server (e.g. DagsHub)."
         )

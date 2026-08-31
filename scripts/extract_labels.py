@@ -10,8 +10,9 @@ Usage:
     python scripts/extract_labels.py
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

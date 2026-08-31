@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 from pathlib import Path
+
 import pandas as pd
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -52,10 +53,16 @@ def main() -> None:
     kept_dist = kept["subtype"].value_counts(normalize=True).sort_index() * 100
     dropped_dist = dropped["subtype"].value_counts(normalize=True).sort_index() * 100
 
-    comparison = pd.DataFrame({
-        "kept_%": kept_dist,
-        "dropped_%": dropped_dist,
-    }).fillna(0).round(1)
+    comparison = (
+        pd.DataFrame(
+            {
+                "kept_%": kept_dist,
+                "dropped_%": dropped_dist,
+            }
+        )
+        .fillna(0)
+        .round(1)
+    )
     comparison["diff_pts"] = (comparison["kept_%"] - comparison["dropped_%"]).round(1)
 
     print("Subtype distribution: kept (733) vs dropped (302) patients")
@@ -64,11 +71,15 @@ def main() -> None:
     max_diff = comparison["diff_pts"].abs().max()
     print(f"\nLargest single-subtype gap: {max_diff:.1f} percentage points")
     if max_diff >= 10:
-        print("[FLAG] This is a meaningful skew - the platform split is NOT random with "
-              "respect to subtype.")
+        print(
+            "[FLAG] This is a meaningful skew - the platform split is NOT random with "
+            "respect to subtype."
+        )
     else:
-        print("Distributions look reasonably similar - dropping the HM27 patients doesn't "
-              "appear to meaningfully bias your class balance.")
+        print(
+            "Distributions look reasonably similar - dropping the HM27 patients doesn't "
+            "appear to meaningfully bias your class balance."
+        )
 
     kept.to_csv(OUT_PATH, index=False)
     print(f"\nSaved: {OUT_PATH} ({len(kept)} patients)")

@@ -1,4 +1,5 @@
 """Sanity tests for the config system — these should never break silently."""
+
 from bio_nexus.utils.config import BioNexusConfig
 
 
@@ -15,4 +16,6 @@ def test_config_is_frozen():
         raised = False
     except Exception:
         raised = True
-    assert raised, "Config should be immutable after load — silent mutation risks reproducibility bugs"
+    assert raised, (
+        "Config should be immutable after load — silent mutation risks reproducibility bugs"
+    )
