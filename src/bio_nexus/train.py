@@ -29,11 +29,11 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.utils.class_weight import compute_class_weight
 
-from bio_nexus.models.classifier import BioNexusClassifier, ClassifierConfig, PAM50_SUBTYPES
+from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
 
 
 @dataclass
@@ -41,7 +41,7 @@ class TrainConfig:
     n_folds: int = 5
     max_epochs: int = 300
     lr: float = 1e-3
-    weight_decay: float = 1e-4     # L2 regularization - important given param/patient ratio
+    weight_decay: float = 1e-4  # L2 regularization - important given param/patient ratio
     early_stop_patience: int = 20  # epochs without val macro-F1 improvement before stopping
     seed: int = 42
 
@@ -68,13 +68,23 @@ def load_data(base_dir: Path):
     y = labels_df["subtype"].map(label_to_idx).to_numpy()
 
     if np.isnan(y).any():
-        raise ValueError("Some patients have a subtype not in PAM50_SUBTYPES - check labels_final.csv")
+        raise ValueError(
+            "Some patients have a subtype not in PAM50_SUBTYPES - check labels_final.csv"
+        )
 
     return rna_graph, mirna_graph, meth_graph, y.astype(int), node_order
 
 
-def train_one_fold(rna_graph, mirna_graph, meth_graph, y: np.ndarray,
-                    train_idx: np.ndarray, val_idx: np.ndarray, cfg: TrainConfig, fold_num: int):
+def train_one_fold(
+    rna_graph,
+    mirna_graph,
+    meth_graph,
+    y: np.ndarray,
+    train_idx: np.ndarray,
+    val_idx: np.ndarray,
+    cfg: TrainConfig,
+    fold_num: int,
+):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = BioNexusClassifier(
@@ -83,7 +93,11 @@ def train_one_fold(rna_graph, mirna_graph, meth_graph, y: np.ndarray,
         meth_in_features=meth_graph.x.shape[1],
     ).to(device)
 
-    rna_graph, mirna_graph, meth_graph = rna_graph.to(device), mirna_graph.to(device), meth_graph.to(device)
+    rna_graph, mirna_graph, meth_graph = (
+        rna_graph.to(device),
+        mirna_graph.to(device),
+        meth_graph.to(device),
+    )
     y_t = torch.tensor(y, dtype=torch.long, device=device)
 
     train_mask = torch.zeros(len(y), dtype=torch.bool, device=device)
@@ -92,7 +106,9 @@ def train_one_fold(rna_graph, mirna_graph, meth_graph, y: np.ndarray,
     val_mask[val_idx] = True
 
     # Class weights computed from TRAINING fold labels only
-    class_weights = compute_class_weight("balanced", classes=np.arange(len(PAM50_SUBTYPES)), y=y[train_idx])
+    class_weights = compute_class_weight(
+        "balanced", classes=np.arange(len(PAM50_SUBTYPES)), y=y[train_idx]
+    )
     class_weights_t = torch.tensor(class_weights, dtype=torch.float32, device=device)
     loss_fn = nn.CrossEntropyLoss(weight=class_weights_t)
 
@@ -125,10 +141,16 @@ def train_one_fold(rna_graph, mirna_graph, meth_graph, y: np.ndarray,
             epochs_without_improvement += 1
 
         if epoch % 20 == 0 or epochs_without_improvement == 0:
-            print(f"  [fold {fold_num}] epoch {epoch:3d} | train_loss={loss.item():.4f} | val_macro_f1={val_f1:.4f}")
+            tr_loss = loss.item()
+            print(
+                f"  [fold {fold_num}] epoch {epoch:3d} | "
+                f"loss={tr_loss:.4f} | val_f1={val_f1:.4f}"
+            )
 
         if epochs_without_improvement >= cfg.early_stop_patience:
-            print(f"  [fold {fold_num}] early stopping at epoch {epoch} (best val_macro_f1={best_val_f1:.4f})")
+            print(
+                f"  [fold {fold_num}] early stopping epoch {epoch} (best val_f1={best_val_f1:.4f})"
+            )
             break
 
     model.load_state_dict(best_state)
@@ -142,7 +164,9 @@ def train_one_fold(rna_graph, mirna_graph, meth_graph, y: np.ndarray,
         "accuracy": accuracy_score(val_true, val_preds),
         "macro_f1": f1_score(val_true, val_preds, average="macro", zero_division=0),
         "weighted_f1": f1_score(val_true, val_preds, average="weighted", zero_division=0),
-        "confusion_matrix": confusion_matrix(val_true, val_preds, labels=list(range(len(PAM50_SUBTYPES)))),
+        "confusion_matrix": confusion_matrix(
+            val_true, val_preds, labels=list(range(len(PAM50_SUBTYPES)))
+        ),
     }
     return model, metrics
 
@@ -155,7 +179,7 @@ def main():
     print("Loading data...")
     rna_graph, mirna_graph, meth_graph, y, node_order = load_data(BASE_DIR)
     print(f"Loaded {len(y)} patients. Subtype distribution:")
-    for name, idx in zip(PAM50_SUBTYPES, range(len(PAM50_SUBTYPES))):
+    for name, idx in zip(PAM50_SUBTYPES, range(len(PAM50_SUBTYPES)), strict=False):
         print(f"  {name}: {(y == idx).sum()}")
 
     skf = StratifiedKFold(n_splits=cfg.n_folds, shuffle=True, random_state=cfg.seed)
@@ -166,9 +190,13 @@ def main():
 
     for fold_num, (train_idx, val_idx) in enumerate(skf.split(np.zeros(len(y)), y), start=1):
         print(f"\n=== Fold {fold_num}/{cfg.n_folds} ===")
-        model, metrics = train_one_fold(rna_graph, mirna_graph, meth_graph, y, train_idx, val_idx, cfg, fold_num)
-        print(f"  Fold {fold_num} result: accuracy={metrics['accuracy']:.4f}, "
-              f"macro_f1={metrics['macro_f1']:.4f}, weighted_f1={metrics['weighted_f1']:.4f}")
+        model, metrics = train_one_fold(
+            rna_graph, mirna_graph, meth_graph, y, train_idx, val_idx, cfg, fold_num
+        )
+        print(
+            f"  Fold {fold_num} result: accuracy={metrics['accuracy']:.4f}, "
+            f"macro_f1={metrics['macro_f1']:.4f}, weighted_f1={metrics['weighted_f1']:.4f}"
+        )
         fold_metrics.append(metrics)
 
         if metrics["macro_f1"] > best_fold_f1:
@@ -183,8 +211,10 @@ def main():
     print(f"Macro F1:     {np.mean(f1s):.4f} +/- {np.std(f1s):.4f}")
     print(f"Weighted F1:  {np.mean(wf1s):.4f} +/- {np.std(wf1s):.4f}")
 
-    print(f"\nConfusion matrix (best fold, macro_f1={best_fold_f1:.4f}), "
-          f"rows=true, cols=predicted, order={PAM50_SUBTYPES}:")
+    print(
+        f"\nConfusion matrix (best fold, macro_f1={best_fold_f1:.4f}), "
+        f"rows=true, cols=predicted, order={PAM50_SUBTYPES}:"
+    )
     print(fold_metrics[np.argmax(f1s)]["confusion_matrix"])
 
     ckpt_dir = BASE_DIR / "data" / "processed" / "checkpoints"

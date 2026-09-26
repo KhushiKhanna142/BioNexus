@@ -25,10 +25,10 @@ import torch.nn as nn
 
 @dataclass
 class FusionConfig:
-    embed_dim: int = 64       # must match GraphTransformerConfig.embed_dim
+    embed_dim: int = 64  # must match GraphTransformerConfig.embed_dim
     num_heads: int = 4
     dropout: float = 0.3
-    num_modalities: int = 3   # RNA, methylation, miRNA
+    num_modalities: int = 3  # RNA, methylation, miRNA
 
 
 class CrossAttentionFusion(nn.Module):
@@ -45,7 +45,9 @@ class CrossAttentionFusion(nn.Module):
         # vector before attention - lets the model distinguish "this is the
         # RNA embedding" from "this is the methylation embedding", since
         # otherwise attention has no way to tell the 3 inputs apart.
-        self.modality_embedding = nn.Parameter(torch.randn(cfg.num_modalities, cfg.embed_dim) * 0.02)
+        self.modality_embedding = nn.Parameter(
+            torch.randn(cfg.num_modalities, cfg.embed_dim) * 0.02
+        )
 
         self.attention = nn.MultiheadAttention(
             embed_dim=cfg.embed_dim,
@@ -79,22 +81,24 @@ class CrossAttentionFusion(nn.Module):
                            - attention weights, useful for interpretability
                            (averaged over heads before returning)
         """
-        num_patients = rna_emb.shape[0]
+        rna_emb.shape[0]
 
         # Stack into a length-3 "sequence" per patient: [num_patients, 3, embed_dim]
         modality_seq = torch.stack([rna_emb, mirna_emb, meth_emb], dim=1)
         modality_seq = modality_seq + self.modality_embedding.unsqueeze(0)  # add modality identity
 
         attn_out, attn_weights = self.attention(
-            modality_seq, modality_seq, modality_seq,
+            modality_seq,
+            modality_seq,
+            modality_seq,
             average_attn_weights=True,  # average over heads -> [num_patients, 3, 3]
         )
         h = self.norm1(modality_seq + self.dropout(attn_out))
         h = self.norm2(h + self.dropout(self.ffn(h)))  # [num_patients, 3, embed_dim]
 
         # Learned weighted pooling across the 3 modality tokens -> single fused vector
-        pool_logits = self.pool_weights(h).squeeze(-1)          # [num_patients, 3]
-        pool_weights = torch.softmax(pool_logits, dim=-1)       # [num_patients, 3]
+        pool_logits = self.pool_weights(h).squeeze(-1)  # [num_patients, 3]
+        pool_weights = torch.softmax(pool_logits, dim=-1)  # [num_patients, 3]
         fused = torch.sum(h * pool_weights.unsqueeze(-1), dim=1)  # [num_patients, embed_dim]
 
         return fused, attn_weights, pool_weights
@@ -107,8 +111,7 @@ def get_modality_contribution(pool_weights: torch.Tensor) -> dict:
     modality_names = ["rna", "mirna", "meth"]
     weights = pool_weights.detach().cpu().numpy()
     return [
-        {modality_names[i]: float(weights[p, i]) for i in range(3)}
-        for p in range(weights.shape[0])
+        {modality_names[i]: float(weights[p, i]) for i in range(3)} for p in range(weights.shape[0])
     ]
 
 
@@ -126,8 +129,12 @@ if __name__ == "__main__":
     fused, attn_weights, pool_weights = fusion(rna_emb, mirna_emb, meth_emb)
 
     print(f"Fused embedding shape: {tuple(fused.shape)} (patients x embed_dim)")
-    print(f"Attention weights shape: {tuple(attn_weights.shape)} (patients x 3 modalities x 3 modalities)")
+    attn_shape = tuple(attn_weights.shape)
+    print(f"Attention weights shape: {attn_shape} (patients x 3 modalities x 3 modalities)")
     print(f"Pooling weights shape: {tuple(pool_weights.shape)} (patients x 3 modalities)")
-    print(f"\nExample - modality contribution for patient 0: {get_modality_contribution(pool_weights)[0]}")
-    print("\nNOTE: fusion module is UNTRAINED at this point - weights are random-initialized, "
-          "not meaningful until trained end-to-end with the classifier (see models/classifier.py + train.py)")
+    contrib_0 = get_modality_contribution(pool_weights)[0]
+    print(f"\nExample - modality contribution for patient 0: {contrib_0}")
+    print(
+        "\nNOTE: fusion module is UNTRAINED at this point - weights are random-initialized,\n"
+        "not meaningful until trained end-to-end (see models/classifier.py + train.py)"
+    )

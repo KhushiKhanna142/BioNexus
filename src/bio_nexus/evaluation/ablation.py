@@ -21,13 +21,13 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.class_weight import compute_class_weight
 
 from bio_nexus.encoding.graph_transformer import GraphGPSEncoder, GraphTransformerConfig
 from bio_nexus.models.classifier import PAM50_SUBTYPES
-from bio_nexus.train import TrainConfig, set_seed, load_data
+from bio_nexus.train import TrainConfig, load_data, set_seed
 
 
 class SingleOmicsClassifier(nn.Module):
@@ -35,8 +35,14 @@ class SingleOmicsClassifier(nn.Module):
     layer only - no fusion module, since there's nothing to fuse.
     Encoder embedding -> classifier head directly."""
 
-    def __init__(self, in_features: int, encoder_cfg: GraphTransformerConfig, num_classes: int = 5,
-                 hidden_dim: int = 32, dropout: float = 0.3):
+    def __init__(
+        self,
+        in_features: int,
+        encoder_cfg: GraphTransformerConfig,
+        num_classes: int = 5,
+        hidden_dim: int = 32,
+        dropout: float = 0.3,
+    ):
         super().__init__()
         self.encoder = GraphGPSEncoder(in_features, encoder_cfg)
         self.classifier_head = nn.Sequential(
@@ -52,8 +58,15 @@ class SingleOmicsClassifier(nn.Module):
         return logits
 
 
-def train_one_fold_single(graph, y: np.ndarray, train_idx: np.ndarray, val_idx: np.ndarray,
-                            cfg: TrainConfig, layer_name: str, fold_num: int):
+def train_one_fold_single(
+    graph,
+    y: np.ndarray,
+    train_idx: np.ndarray,
+    val_idx: np.ndarray,
+    cfg: TrainConfig,
+    layer_name: str,
+    fold_num: int,
+):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = SingleOmicsClassifier(graph.x.shape[1], GraphTransformerConfig()).to(device)
@@ -65,13 +78,17 @@ def train_one_fold_single(graph, y: np.ndarray, train_idx: np.ndarray, val_idx: 
     val_mask = torch.zeros(len(y), dtype=torch.bool, device=device)
     val_mask[val_idx] = True
 
-    class_weights = compute_class_weight("balanced", classes=np.arange(len(PAM50_SUBTYPES)), y=y[train_idx])
-    loss_fn = nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float32, device=device))
+    class_weights = compute_class_weight(
+        "balanced", classes=np.arange(len(PAM50_SUBTYPES)), y=y[train_idx]
+    )
+    loss_fn = nn.CrossEntropyLoss(
+        weight=torch.tensor(class_weights, dtype=torch.float32, device=device)
+    )
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
 
     best_val_f1, best_state, epochs_without_improvement = -1.0, None, 0
 
-    for epoch in range(cfg.max_epochs):
+    for _epoch in range(cfg.max_epochs):
         model.train()
         optimizer.zero_grad()
         logits = model(graph)
@@ -86,7 +103,11 @@ def train_one_fold_single(graph, y: np.ndarray, train_idx: np.ndarray, val_idx: 
             val_f1 = f1_score(y[val_idx], val_preds, average="macro", zero_division=0)
 
         if val_f1 > best_val_f1:
-            best_val_f1, best_state, epochs_without_improvement = val_f1, {k: v.clone() for k, v in model.state_dict().items()}, 0
+            best_val_f1, best_state, epochs_without_improvement = (
+                val_f1,
+                {k: v.clone() for k, v in model.state_dict().items()},
+                0,
+            )
         else:
             epochs_without_improvement += 1
 
@@ -122,8 +143,10 @@ def main():
     set_seed(cfg.seed)
 
     rna_graph, mirna_graph, meth_graph, y, node_order = load_data(BASE_DIR)
-    print(f"Running single-omics ablation on {len(y)} patients, {cfg.n_folds}-fold CV "
-          f"(SAME folds/seed as the fused model, for fair comparison)")
+    print(
+        f"Running single-omics ablation on {len(y)} patients, {cfg.n_folds}-fold CV "
+        f"(SAME folds/seed as the fused model, for fair comparison)"
+    )
 
     results = {}
     for layer_name, graph in [("rna", rna_graph), ("mirna", mirna_graph), ("meth", meth_graph)]:
@@ -138,18 +161,28 @@ def main():
         accs = [m["accuracy"] for m in fold_metrics]
         f1s = [m["macro_f1"] for m in fold_metrics]
         wf1s = [m["weighted_f1"] for m in fold_metrics]
-        print(f"{layer_name:<12} {np.mean(accs):.4f} +/- {np.std(accs):.4f}   "
-              f"{np.mean(f1s):.4f} +/- {np.std(f1s):.4f}   {np.mean(wf1s):.4f} +/- {np.std(wf1s):.4f}")
-        summary_rows.append({
-            "layer": layer_name, "accuracy_mean": np.mean(accs), "accuracy_std": np.std(accs),
-            "macro_f1_mean": np.mean(f1s), "macro_f1_std": np.std(f1s),
-            "weighted_f1_mean": np.mean(wf1s), "weighted_f1_std": np.std(wf1s),
-        })
+        print(
+            f"{layer_name:<12} {np.mean(accs):.4f} +/- {np.std(accs):.4f}   "
+            f"{np.mean(f1s):.4f} +/- {np.std(f1s):.4f}   {np.mean(wf1s):.4f} +/- {np.std(wf1s):.4f}"
+        )
+        summary_rows.append(
+            {
+                "layer": layer_name,
+                "accuracy_mean": np.mean(accs),
+                "accuracy_std": np.std(accs),
+                "macro_f1_mean": np.mean(f1s),
+                "macro_f1_std": np.std(f1s),
+                "weighted_f1_mean": np.mean(wf1s),
+                "weighted_f1_std": np.std(wf1s),
+            }
+        )
 
     print(f"{'fused (all 3)':<12} see train.py output - run separately for the full-fusion number")
-    print("\nNOTE: compare each row above against your train.py fused-model result "
-          "(Accuracy 0.7387, Macro F1 0.7114) to see whether fusion actually helps "
-          "over each single omics layer alone.")
+    print(
+        "\nNOTE: compare each row above against your train.py fused-model result "
+        "(Accuracy 0.7387, Macro F1 0.7114) to see whether fusion actually helps "
+        "over each single omics layer alone."
+    )
 
     out_dir = BASE_DIR / "data" / "processed" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)

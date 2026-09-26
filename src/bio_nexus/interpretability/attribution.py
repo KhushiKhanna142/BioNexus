@@ -23,21 +23,27 @@ Usage:
     python -m bio_nexus.interpretability.attribution
 """
 
-from pathlib import Path
 import copy
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
 
-from bio_nexus.models.classifier import BioNexusClassifier, PAM50_SUBTYPES
+from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
 from bio_nexus.train import load_data
 
 LAYER_TO_INDEX = {"rna": 0, "mirna": 1, "meth": 2}
 
 
-def integrated_gradients(model, graphs: list, target_layer: str, patient_idx: int,
-                          target_class: int = None, steps: int = 50):
+def integrated_gradients(
+    model,
+    graphs: list,
+    target_layer: str,
+    patient_idx: int,
+    target_class: int = None,
+    steps: int = 50,
+):
     """
     graphs: [rna_graph, mirna_graph, meth_graph] (order matters - matches model.forward)
     target_layer: "rna", "mirna", or "meth" - which layer's features to attribute
@@ -62,7 +68,9 @@ def integrated_gradients(model, graphs: list, target_layer: str, patient_idx: in
         x_interp = (baseline + alpha * (x_real - baseline)).clone().requires_grad_(True)
 
         interp_graphs = list(graphs)
-        interp_target_graph = copy.copy(target_graph)  # shallow copy - reuse same edge_index/edge_attr
+        interp_target_graph = copy.copy(
+            target_graph
+        )  # shallow copy - reuse same edge_index/edge_attr
         interp_target_graph.x = x_interp
         interp_graphs[layer_idx] = interp_target_graph
 
@@ -119,9 +127,11 @@ if __name__ == "__main__":
         )
         top_genes = top_attributed_features(attribution, rna_names, top_k=10)
 
-        print(f"\n=== Patient {node_order[patient_idx]} (true: {PAM50_SUBTYPES[y[patient_idx]]}, "
-              f"predicted: {PAM50_SUBTYPES[pred_class]}, confidence: {confidence:.1%}) ===")
+        print(
+            f"\n=== Patient {node_order[patient_idx]} (true: {PAM50_SUBTYPES[y[patient_idx]]}, "
+            f"predicted: {PAM50_SUBTYPES[pred_class]}, confidence: {confidence:.1%}) ==="
+        )
         print("Top 10 RNA genes by attribution (gene, score, feature_index):")
-        for name, score, idx in top_genes:
+        for name, score, _idx in top_genes:
             direction = "pushes toward" if score > 0 else "pushes away from"
             print(f"  {name:20s} {score:+.4f}  ({direction} predicted class)")

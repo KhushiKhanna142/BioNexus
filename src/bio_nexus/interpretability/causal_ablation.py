@@ -17,17 +17,19 @@ Usage:
     python -m bio_nexus.interpretability.causal_ablation
 """
 
-from pathlib import Path
 import copy
+from pathlib import Path
 
 import numpy as np
 import torch
 
-from bio_nexus.models.classifier import BioNexusClassifier, PAM50_SUBTYPES
-from bio_nexus.train import load_data, set_seed
 from bio_nexus.interpretability.attribution import (
-    integrated_gradients, top_attributed_features, load_feature_names, LAYER_TO_INDEX
+    LAYER_TO_INDEX,
+    integrated_gradients,
+    top_attributed_features,
 )
+from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
+from bio_nexus.train import load_data, set_seed
 
 
 def get_prediction_confidence(model, graphs: list, patient_idx: int, target_class: int) -> float:
@@ -46,8 +48,14 @@ def get_target_logit(model, graphs: list, patient_idx: int, target_class: int) -
         return logits[patient_idx, target_class].item()
 
 
-def ablate_features(model, graphs: list, target_layer: str, patient_idx: int,
-                     feature_indices: list, target_class: int) -> float:
+def ablate_features(
+    model,
+    graphs: list,
+    target_layer: str,
+    patient_idx: int,
+    feature_indices: list,
+    target_class: int,
+) -> float:
     """Zeroes out the given feature indices for ONE patient's row in the
     target layer, re-runs the model, and returns the new LOGIT (not
     softmax probability) for target_class. Logits are used instead of
@@ -69,8 +77,15 @@ def ablate_features(model, graphs: list, target_layer: str, patient_idx: int,
     return get_target_logit(model, ablated_graphs, patient_idx, target_class)
 
 
-def causal_ablation_check(model, graphs: list, target_layer: str, patient_idx: int,
-                            top_k: int = 20, n_random_trials: int = 20, seed: int = 42):
+def causal_ablation_check(
+    model,
+    graphs: list,
+    target_layer: str,
+    patient_idx: int,
+    top_k: int = 20,
+    n_random_trials: int = 20,
+    seed: int = 42,
+):
     """Compares LOGIT drop from ablating top-K attributed genes vs
     K random genes (averaged over n_random_trials). Logit-space avoids
     the softmax-saturation problem where confident predictions (>95%)
@@ -87,13 +102,17 @@ def causal_ablation_check(model, graphs: list, target_layer: str, patient_idx: i
 
     orig_logit = get_target_logit(model, graphs, patient_idx, pred_class)
 
-    top_ablated_logit = ablate_features(model, graphs, target_layer, patient_idx, top_indices, pred_class)
+    top_ablated_logit = ablate_features(
+        model, graphs, target_layer, patient_idx, top_indices, pred_class
+    )
     top_drop = orig_logit - top_ablated_logit
 
     random_drops = []
     for _ in range(n_random_trials):
         random_indices = list(np.random.choice(num_features, size=top_k, replace=False))
-        random_logit = ablate_features(model, graphs, target_layer, patient_idx, random_indices, pred_class)
+        random_logit = ablate_features(
+            model, graphs, target_layer, patient_idx, random_indices, pred_class
+        )
         random_drops.append(orig_logit - random_logit)
 
     return {
@@ -124,21 +143,33 @@ if __name__ == "__main__":
     model.eval()
 
     print("Causal ablation validation: top-20 attributed RNA genes vs 20 random genes")
-    print("(measured in LOGIT space, not softmax probability, to avoid saturation at high confidence)\n")
-    print(f"{'Patient':<15} {'Predicted':<10} {'Confidence':<12} {'Top-K Logit Drop':<18} "
-          f"{'Random Logit Drop (mean+/-std)':<32} {'Ratio':<8}")
+    print(
+        "(measured in LOGIT space, not softmax probability, to avoid saturation)\n"
+    )
+    print(
+        f"{'Patient':<15} {'Predicted':<10} {'Confidence':<12} {'Top-K Logit Drop':<18} "
+        f"{'Random Logit Drop (mean+/-std)':<32} {'Ratio':<8}"
+    )
 
     all_ratios = []
     for patient_idx in range(10):  # demo on first 10 patients
-        result = causal_ablation_check(model, graphs, target_layer="rna", patient_idx=patient_idx,
-                                         top_k=20, n_random_trials=20)
+        result = causal_ablation_check(
+            model, graphs, target_layer="rna", patient_idx=patient_idx, top_k=20, n_random_trials=20
+        )
         all_ratios.append(result["ratio_top_vs_random"])
-        print(f"{node_order[patient_idx]:<15} {result['predicted_class']:<10} "
-              f"{result['original_confidence']:.1%}       {result['top_k_logit_drop']:+.4f}            "
-              f"{result['random_logit_drop_mean']:+.4f} +/- {result['random_logit_drop_std']:.4f}          "
-              f"{result['ratio_top_vs_random']:.2f}x")
+        p_id = node_order[patient_idx]
+        pred_cls = result["predicted_class"]
+        conf = f"{result['original_confidence']:.1%}"
+        top_drop = f"{result['top_k_logit_drop']:+.4f}"
+        m_val, s_val = result['random_logit_drop_mean'], result['random_logit_drop_std']
+        rand_drop = f"{m_val:+.4f} +/- {s_val:.4f}"
+        ratio_str = f"{result['ratio_top_vs_random']:.2f}x"
+        print(f"{p_id:<15} {pred_cls:<10} {conf:<12} {top_drop:<18} {rand_drop:<32} {ratio_str:<8}")
 
-    print(f"\nMean ratio (top-K logit drop / random logit drop) across 10 patients: {np.mean(all_ratios):.2f}x")
-    print("(Ratio > 1 means attribution-flagged genes cause a bigger LOGIT drop than random genes "
-          "when ablated. Logit space avoids the softmax-saturation issue where confident predictions "
-          "showed near-zero, noisy probability movement regardless of which genes were removed.)")
+    mean_ratio = np.mean(all_ratios)
+    print(f"\nMean ratio (top-K / random logit drop) over 10 patients: {mean_ratio:.2f}x")
+    print(
+        "(Ratio > 1 means attribution-flagged genes cause a bigger LOGIT drop than random genes "
+        "when ablated. Logit space avoids the softmax-saturation issue where confident predictions "
+        "showed near-zero, noisy probability movement regardless of which genes were removed.)"
+    )

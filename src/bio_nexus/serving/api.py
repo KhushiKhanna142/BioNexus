@@ -9,17 +9,21 @@ Run with:
     uvicorn bio_nexus.serving.api:app --reload --port 8000
 """
 
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import torch
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from bio_nexus.models.classifier import BioNexusClassifier, PAM50_SUBTYPES
+from bio_nexus.interpretability.attribution import (
+    integrated_gradients,
+    load_feature_names,
+    top_attributed_features,
+)
+from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
 from bio_nexus.train import load_data
-from bio_nexus.interpretability.attribution import integrated_gradients, top_attributed_features, load_feature_names
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 
@@ -53,11 +57,14 @@ async def lifespan(app: FastAPI):
     metrics_path = BASE_DIR / "data" / "processed" / "results" / "metrics.json"
     if metrics_path.exists():
         import json
+
         STATE["metrics"] = json.loads(metrics_path.read_text())
     else:
         STATE["metrics"] = None
-        print(f"[WARNING] {metrics_path} not found - /api/metrics will return null. "
-              f"See metrics_seed.py to generate it.")
+        print(
+            f"[WARNING] {metrics_path} not found - /api/metrics will return null. "
+            f"See metrics_seed.py to generate it."
+        )
 
     print(f"Loaded model and {len(node_order)} patients. Ready.")
     yield
@@ -163,5 +170,7 @@ def metrics():
     """Overall model performance for the dashboard. Returns None if
     metrics.json hasn't been generated yet - see metrics_seed.py."""
     if STATE["metrics"] is None:
-        raise HTTPException(status_code=404, detail="Metrics not yet generated - run metrics_seed.py")
+        raise HTTPException(
+            status_code=404, detail="Metrics not yet generated - run metrics_seed.py"
+        )
     return STATE["metrics"]

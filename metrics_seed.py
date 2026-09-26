@@ -37,13 +37,32 @@ metrics = {
             ],
         },
         "per_class_recall": {
-            "LumA": 0.912, "LumB": 0.769, "Her2": 1.0, "Basal": 1.0, "Normal": 0.833
+            "LumA": 0.912,
+            "LumB": 0.769,
+            "Her2": 1.0,
+            "Basal": 1.0,
+            "Normal": 0.833,
         },
     },
     "single_omics_ablation": {
-        "rna": {"accuracy_mean": 0.8144, "accuracy_std": 0.0836, "macro_f1_mean": 0.8104, "macro_f1_std": 0.0765},
-        "mirna": {"accuracy_mean": 0.7492, "accuracy_std": 0.0405, "macro_f1_mean": 0.7242, "macro_f1_std": 0.0361},
-        "meth": {"accuracy_mean": 0.7230, "accuracy_std": 0.0318, "macro_f1_mean": 0.7280, "macro_f1_std": 0.0365},
+        "rna": {
+            "accuracy_mean": 0.8144,
+            "accuracy_std": 0.0836,
+            "macro_f1_mean": 0.8104,
+            "macro_f1_std": 0.0765,
+        },
+        "mirna": {
+            "accuracy_mean": 0.7492,
+            "accuracy_std": 0.0405,
+            "macro_f1_mean": 0.7242,
+            "macro_f1_std": 0.0361,
+        },
+        "meth": {
+            "accuracy_mean": 0.7230,
+            "accuracy_std": 0.0318,
+            "macro_f1_mean": 0.7280,
+            "macro_f1_std": 0.0365,
+        },
     },
     "interpretability": {
         "wilcoxon_p_value": 0.0,  # reported as p < 0.001 - exact value from your run's output

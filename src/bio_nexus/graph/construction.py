@@ -28,8 +28,8 @@ from sklearn.neighbors import NearestNeighbors
 @dataclass
 class GraphConstructionConfig:
     k_neighbors: int = 10
-    metric: str = "cosine"          # "cosine" or "correlation"
-    symmetric: bool = True          # symmetrize kNN edges (make undirected)
+    metric: str = "cosine"  # "cosine" or "correlation"
+    symmetric: bool = True  # symmetrize kNN edges (make undirected)
     self_loops: bool = False
 
 
@@ -89,8 +89,9 @@ def build_knn_graph(feature_matrix: pd.DataFrame, cfg: GraphConstructionConfig):
     return edge_index, edge_weight, node_ids
 
 
-def build_all_layer_graphs(processed_final_dir: Path, out_dir: Path,
-                             cfg: GraphConstructionConfig = None):
+def build_all_layer_graphs(
+    processed_final_dir: Path, out_dir: Path, cfg: GraphConstructionConfig = None
+):
     """Build and save a k-NN graph for each of the 3 omics layers, using
     the final locked-in cohort matrices (rna/mirna/meth_matrix_final.csv)."""
     cfg = cfg or GraphConstructionConfig()
@@ -120,19 +121,29 @@ def build_all_layer_graphs(processed_final_dir: Path, out_dir: Path,
 
         try:
             from torch_geometric.data import Data
+
             graph = Data(x=x, edge_index=edge_index, edge_attr=edge_weight)
             torch.save(graph, out_dir / f"{layer_name}_graph.pt")
         except ImportError:
             # fall back to saving raw tensors if torch_geometric isn't installed yet
             torch.save(
-                {"x": x, "edge_index": edge_index, "edge_weight": edge_weight, "node_ids": node_ids},
+                {
+                    "x": x,
+                    "edge_index": edge_index,
+                    "edge_weight": edge_weight,
+                    "node_ids": node_ids,
+                },
                 out_dir / f"{layer_name}_graph.pt",
             )
 
-        print(f"[{layer_name}] graph built: {x.shape[0]} nodes, {edge_index.shape[1]} edges "
-              f"-> saved {out_dir / f'{layer_name}_graph.pt'}")
+        print(
+            f"[{layer_name}] graph built: {x.shape[0]} nodes, {edge_index.shape[1]} edges "
+            f"-> saved {out_dir / f'{layer_name}_graph.pt'}"
+        )
 
-    pd.Series(node_id_reference, name="patient_id").to_csv(out_dir / "graph_node_order.csv", index=False)
+    pd.Series(node_id_reference, name="patient_id").to_csv(
+        out_dir / "graph_node_order.csv", index=False
+    )
     print(f"\nAll 3 layer graphs saved to {out_dir}, node order confirmed consistent.")
 
 

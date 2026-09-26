@@ -12,7 +12,6 @@ Usage:
 
 from pathlib import Path
 
-import numpy as np
 import torch
 
 from bio_nexus.models.classifier import BioNexusClassifier
@@ -39,12 +38,17 @@ def main():
     pool_weights = pool_weights.numpy()  # [646, 3] -> RNA, miRNA, methylation
 
     print("=== Fusion pooling weights across all 646 patients ===")
-    print("(if fusion learned to trust miRNA/meth more than RNA, RNA's mean should be visibly lower)\n")
+    print(
+        "(if fusion learned to trust miRNA/meth more than RNA, "
+        "RNA's mean should be lower)\n"
+    )
     layer_names = ["rna", "mirna", "meth"]
     for i, name in enumerate(layer_names):
         col = pool_weights[:, i]
-        print(f"{name:8s}: mean={col.mean():.4f}  std={col.std():.4f}  "
-              f"min={col.min():.4f}  max={col.max():.4f}")
+        print(
+            f"{name:8s}: mean={col.mean():.4f}  std={col.std():.4f}  "
+            f"min={col.min():.4f}  max={col.max():.4f}"
+        )
 
     uniform = 1 / 3
     print(f"\n(Uniform/no-preference baseline would be {uniform:.4f} for each layer)")
@@ -52,21 +56,25 @@ def main():
     max_gap = pool_weights.mean(axis=0).max() - pool_weights.mean(axis=0).min()
     print(f"\nLargest gap between mean weights: {max_gap:.4f}")
     if max_gap < 0.05:
-        print("[FINDING] Weights are close to uniform - fusion has NOT learned strong "
-              "per-modality preference. This suggests the fusion mechanism isn't "
-              "effectively discounting the weaker RNA layer.")
+        print(
+            "[FINDING] Weights are close to uniform - fusion has NOT learned strong "
+            "per-modality preference. This suggests the fusion mechanism isn't "
+            "effectively discounting the weaker RNA layer."
+        )
     else:
         print("[FINDING] Fusion HAS learned differentiated weights across modalities.")
 
     # Correlate: does high RNA-weight correlate with WORSE predictions?
     preds = torch.argmax(logits, dim=-1).numpy()
-    correct = (preds == y)
+    correct = preds == y
     rna_weight = pool_weights[:, 0]
 
     print(f"\nMean RNA pooling weight for CORRECT predictions:   {rna_weight[correct].mean():.4f}")
     print(f"Mean RNA pooling weight for INCORRECT predictions: {rna_weight[~correct].mean():.4f}")
-    print("(if RNA weight is similar in both groups, the model isn't successfully "
-          "using RNA-weight as a signal of unreliability)")
+    print(
+        "(if RNA weight is similar in both groups, the model isn't successfully "
+        "using RNA-weight as a signal of unreliability)"
+    )
 
 
 if __name__ == "__main__":

@@ -28,9 +28,9 @@ PAM50_SUBTYPES = ["LumA", "LumB", "Her2", "Basal", "Normal"]
 class ClassifierConfig:
     encoder_cfg: GraphTransformerConfig = field(default_factory=GraphTransformerConfig)
     fusion_cfg: FusionConfig = field(default_factory=FusionConfig)
-    hidden_dim: int = 32          # classifier head hidden size
+    hidden_dim: int = 32  # classifier head hidden size
     dropout: float = 0.3
-    num_classes: int = 5          # len(PAM50_SUBTYPES)
+    num_classes: int = 5  # len(PAM50_SUBTYPES)
 
 
 class BioNexusClassifier(nn.Module):
@@ -41,8 +41,13 @@ class BioNexusClassifier(nn.Module):
     fuses the 3 resulting embeddings via cross-attention, and predicts
     PAM50 subtype from the fused representation."""
 
-    def __init__(self, rna_in_features: int, mirna_in_features: int, meth_in_features: int,
-                 cfg: ClassifierConfig = None):
+    def __init__(
+        self,
+        rna_in_features: int,
+        mirna_in_features: int,
+        meth_in_features: int,
+        cfg: ClassifierConfig = None,
+    ):
         super().__init__()
         self.cfg = cfg or ClassifierConfig()
 
@@ -91,18 +96,21 @@ class BioNexusClassifier(nn.Module):
 
         results = []
         for i in range(logits.shape[0]):
-            results.append({
-                "predicted_subtype": PAM50_SUBTYPES[pred_idx[i].item()],
-                "confidence": float(probs[i, pred_idx[i]].item()),
-                "all_probabilities": {
-                    PAM50_SUBTYPES[c]: float(probs[i, c].item()) for c in range(len(PAM50_SUBTYPES))
-                },
-                "modality_contribution": {
-                    "rna": float(pool_weights[i, 0].item()),
-                    "mirna": float(pool_weights[i, 1].item()),
-                    "meth": float(pool_weights[i, 2].item()),
-                },
-            })
+            results.append(
+                {
+                    "predicted_subtype": PAM50_SUBTYPES[pred_idx[i].item()],
+                    "confidence": float(probs[i, pred_idx[i]].item()),
+                    "all_probabilities": {
+                        PAM50_SUBTYPES[c]: float(probs[i, c].item())
+                        for c in range(len(PAM50_SUBTYPES))
+                    },
+                    "modality_contribution": {
+                        "rna": float(pool_weights[i, 0].item()),
+                        "mirna": float(pool_weights[i, 1].item()),
+                        "meth": float(pool_weights[i, 2].item()),
+                    },
+                }
+            )
         return results
 
 
@@ -130,8 +138,10 @@ if __name__ == "__main__":
     print(f"\nTotal model parameters: {total_params:,}")
 
     example = model.predict_subtype(rna_graph, mirna_graph, meth_graph)[0]
-    print(f"\nExample prediction (patient 0, UNTRAINED - not meaningful yet):")
+    print("\nExample prediction (patient 0, UNTRAINED - not meaningful yet):")
     print(f"  Predicted: {example['predicted_subtype']} ({example['confidence']:.1%} confidence)")
     print(f"  Modality contribution: {example['modality_contribution']}")
-    print("\nNOTE: model is UNTRAINED - this confirms the full pipeline runs end-to-end "
-          "with correct shapes. Real predictions require train.py next.")
+    print(
+        "\nNOTE: model is UNTRAINED - this confirms the full pipeline runs end-to-end "
+        "with correct shapes. Real predictions require train.py next."
+    )

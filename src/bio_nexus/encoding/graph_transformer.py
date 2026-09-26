@@ -24,25 +24,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 try:
-    from torch_geometric.nn import GPSConv, GINEConv
+    from torch_geometric.nn import GINEConv, GPSConv
 except ImportError as e:
     raise ImportError(
         "torch_geometric.nn.GPSConv not found. This requires a reasonably "
         "recent PyTorch Geometric version (GPSConv was added in PyG 2.3+). "
-        "Check your version with: python3 -c \"import torch_geometric; "
-        "print(torch_geometric.__version__)\" and upgrade with "
+        'Check your version with: python3 -c "import torch_geometric; '
+        'print(torch_geometric.__version__)" and upgrade with '
         "`pip install --upgrade torch_geometric` if needed."
     ) from e
 
 
 @dataclass
 class GraphTransformerConfig:
-    embed_dim: int = 64             # per-patient embedding size (output)
-    hidden_dim: int = 64            # internal hidden size (kept equal to embed_dim by default)
-    num_layers: int = 3             # number of stacked GPSConv layers
-    num_heads: int = 4              # attention heads in the global-attention part of GPSConv
-    dropout: float = 0.3            # higher dropout given small cohort (646 patients) - guards overfitting
-    pool: str = "none"              # "none" since nodes ARE patients already - no pooling needed
+    embed_dim: int = 64  # per-patient embedding size (output)
+    hidden_dim: int = 64  # internal hidden size (kept equal to embed_dim by default)
+    num_layers: int = 3  # number of stacked GPSConv layers
+    num_heads: int = 4  # attention heads in the global-attention part of GPSConv
+    dropout: float = 0.3  # higher dropout given small cohort (646 patients) - guards overfitting
+    pool: str = "none"  # "none" since nodes ARE patients already - no pooling needed
 
 
 class GraphGPSEncoder(nn.Module):
@@ -67,7 +67,9 @@ class GraphGPSEncoder(nn.Module):
                 nn.ReLU(),
                 nn.Linear(cfg.hidden_dim, cfg.hidden_dim),
             )
-            local_conv = GINEConv(local_mlp, edge_dim=1)  # edge_dim=1: our edge_weight is scalar similarity
+            local_conv = GINEConv(
+                local_mlp, edge_dim=1
+            )  # edge_dim=1: our edge_weight is scalar similarity
 
             gps_layer = GPSConv(
                 channels=cfg.hidden_dim,
@@ -78,7 +80,9 @@ class GraphGPSEncoder(nn.Module):
             self.gps_layers.append(gps_layer)
 
         self.output_proj = nn.Linear(cfg.hidden_dim, cfg.embed_dim)
-        self.output_norm = nn.LayerNorm(cfg.embed_dim)  # ensures comparable scale across modalities before fusion pooling
+        self.output_norm = nn.LayerNorm(
+            cfg.embed_dim
+        )  # ensures comparable scale across modalities before fusion pooling
         self.dropout = nn.Dropout(cfg.dropout)
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_weight: torch.Tensor):
@@ -133,8 +137,12 @@ if __name__ == "__main__":
     for layer_name in ["rna", "mirna", "meth"]:
         graph = torch.load(GRAPH_DIR / f"{layer_name}_graph.pt", weights_only=False)
         embeddings, encoder = encode_layer_graph(graph, cfg)
-        print(f"[{layer_name}] embeddings shape: {tuple(embeddings.shape)} "
-              f"(patients x embed_dim={cfg.embed_dim})")
-        print(f"[{layer_name}] NOTE: encoder is UNTRAINED at this point - these embeddings "
-              f"are random-initialized output, not meaningful until trained end-to-end "
-              f"with the classifier (see models/classifier.py + train.py)")
+        print(
+            f"[{layer_name}] embeddings shape: {tuple(embeddings.shape)} "
+            f"(patients x embed_dim={cfg.embed_dim})"
+        )
+        print(
+            f"[{layer_name}] NOTE: encoder is UNTRAINED at this point - these embeddings "
+            f"are random-initialized output, not meaningful until trained end-to-end "
+            f"with the classifier (see models/classifier.py + train.py)"
+        )
