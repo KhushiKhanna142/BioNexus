@@ -1,108 +1,167 @@
 """
-Inference API — serves the current Production model from the MLflow
-registry (never a locally hardcoded model file; that's how you end up
-serving a stale model with no idea which version is live).
+bio_nexus.serving.api
+--------------------------
+FastAPI inference serving layer for the trained BioNexusClassifier.
+Loads the model once at startup, then serves prediction, interpretability,
+and performance-metrics endpoints for the React frontend.
 
-Uses FastAPI rather than Flask: async-friendly, typed request/response
-models via Pydantic (matches the config pattern used everywhere else in
-this repo), and free OpenAPI docs at /docs — useful when a recruiter or
-your professor wants to poke at the API directly.
-
-Run locally:
-    uvicorn bio_nexus.serving.api:app --host 0.0.0.0 --port 8000
-
-Endpoints:
-    GET  /health    liveness/readiness probe for Kubernetes
-    GET  /metrics   Prometheus scrape endpoint
-    POST /predict   subtype prediction for one patient's multi-omics record
+Run with:
+    uvicorn bio_nexus.serving.api:app --reload --port 8000
 """
 
-from __future__ import annotations
+from pathlib import Path
+from contextlib import asynccontextmanager
 
-import os
-import time
-
-import mlflow
-from fastapi import FastAPI, HTTPException, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+import torch
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from bio_nexus.registry.register_model import MODEL_NAME
-from bio_nexus.utils.logging import get_logger
+from bio_nexus.models.classifier import BioNexusClassifier, PAM50_SUBTYPES
+from bio_nexus.train import load_data
+from bio_nexus.interpretability.attribution import integrated_gradients, top_attributed_features, load_feature_names
 
-logger = get_logger(__name__)
-app = FastAPI(title="BioNexus Inference API", version="0.1.0")
+BASE_DIR = Path(__file__).resolve().parents[3]
 
-PREDICTION_COUNT = Counter("bionexus_predictions_total", "Total prediction requests", ["status"])
-PREDICTION_LATENCY = Histogram("bionexus_prediction_latency_seconds", "Prediction request latency")
-
-_model = None  # lazy-loaded on first request / startup
+STATE = {}  # populated at startup: model, graphs, y, node_order, feature_names, metrics
 
 
-class PredictRequest(BaseModel):
-    """One patient's aligned multi-omics feature vector.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Loading model and data...")
+    rna_graph, mirna_graph, meth_graph, y, node_order = load_data(BASE_DIR)
+    model = BioNexusClassifier(
+        rna_in_features=rna_graph.x.shape[1],
+        mirna_in_features=mirna_graph.x.shape[1],
+        meth_in_features=meth_graph.x.shape[1],
+    )
+    ckpt_path = BASE_DIR / "data" / "processed" / "checkpoints" / "best_model.pt"
+    model.load_state_dict(torch.load(ckpt_path, weights_only=True))
+    model.eval()
 
-    Exact shape depends on the ML side's final feature schema — this is
-    the contract point where serving meets the model; update it once
-    Stage 4 fusion output shape is finalized.
-    """
+    STATE["model"] = model
+    STATE["graphs"] = [rna_graph, mirna_graph, meth_graph]
+    STATE["y"] = y
+    STATE["node_order"] = node_order
+    STATE["patient_to_idx"] = {pid: i for i, pid in enumerate(node_order)}
+    STATE["feature_names"] = {
+        "rna": load_feature_names(BASE_DIR, "rna"),
+        "mirna": load_feature_names(BASE_DIR, "mirna"),
+        "meth": load_feature_names(BASE_DIR, "meth"),
+    }
 
-    expression_features: list[float]
-    methylation_features: list[float]
-    mirna_features: list[float]
+    metrics_path = BASE_DIR / "data" / "processed" / "results" / "metrics.json"
+    if metrics_path.exists():
+        import json
+        STATE["metrics"] = json.loads(metrics_path.read_text())
+    else:
+        STATE["metrics"] = None
+        print(f"[WARNING] {metrics_path} not found - /api/metrics will return null. "
+              f"See metrics_seed.py to generate it.")
+
+    print(f"Loaded model and {len(node_order)} patients. Ready.")
+    yield
+    STATE.clear()
 
 
-class PredictResponse(BaseModel):
+app = FastAPI(title="BioNexus API", lifespan=lifespan)
+
+# CORS: allow the React dev server (Vite default port 5173, CRA default 3000) to call this API.
+# TIGHTEN THIS before deploying publicly - "*" origins is fine for local dev only.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class PredictionResponse(BaseModel):
+    patient_id: str
+    true_subtype: str
     predicted_subtype: str
     confidence: float
-    model_version: str
+    all_probabilities: dict
+    modality_contribution: dict
 
 
-def _load_production_model():
-    tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
-    if not tracking_uri:
-        raise OSError("MLFLOW_TRACKING_URI is not set.")
-    mlflow.set_tracking_uri(tracking_uri)
-    model_uri = f"models:/{MODEL_NAME}/Production"
-    logger.info(f"Loading model from {model_uri}")
-    return mlflow.pyfunc.load_model(model_uri)
+class GeneAttribution(BaseModel):
+    gene: str
+    score: float
 
 
-@app.on_event("startup")
-def startup() -> None:
-    global _model
-    try:
-        _model = _load_production_model()
-    except Exception as e:
-        # Don't crash the pod on startup if the registry is briefly
-        # unavailable -- fail loudly on /predict instead, so k8s liveness
-        # (which hits /health) doesn't loop-crash the deployment.
-        logger.error(f"Could not load Production model at startup: {e}")
+class ExplainResponse(BaseModel):
+    patient_id: str
+    layer: str
+    top_genes: list[GeneAttribution]
 
 
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok", "model_loaded": _model is not None}
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "num_patients": len(STATE.get("node_order", []))}
 
 
-@app.get("/metrics")
-def metrics() -> Response:
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+@app.get("/api/patients")
+def list_patients():
+    """Returns all patient IDs + their true subtype, for the frontend's patient selector."""
+    y = STATE["y"]
+    return [
+        {"patient_id": pid, "true_subtype": PAM50_SUBTYPES[y[i]]}
+        for i, pid in enumerate(STATE["node_order"])
+    ]
 
 
-@app.post("/predict", response_model=PredictResponse)
-def predict(request: PredictRequest) -> PredictResponse:
-    if _model is None:
-        PREDICTION_COUNT.labels(status="error").inc()
-        raise HTTPException(status_code=503, detail="Model not loaded")
+@app.get("/api/predict/{patient_id}", response_model=PredictionResponse)
+def predict(patient_id: str):
+    if patient_id not in STATE["patient_to_idx"]:
+        raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found in cohort")
 
-    start = time.time()
-    try:
-        # Actual feature fusion + inference call goes here once the ML
-        # side's fusion/classification modules are implemented.
-        raise NotImplementedError("Wire this to bio_nexus.fusion + bio_nexus.models.classifier")
-    except NotImplementedError:
-        PREDICTION_COUNT.labels(status="error").inc()
-        raise HTTPException(status_code=501, detail="Model inference not yet implemented") from None
-    finally:
-        PREDICTION_LATENCY.observe(time.time() - start)
+    idx = STATE["patient_to_idx"][patient_id]
+    model = STATE["model"]
+    graphs = STATE["graphs"]
+
+    result = model.predict_subtype(*graphs)[idx]
+    true_subtype = PAM50_SUBTYPES[STATE["y"][idx]]
+
+    return PredictionResponse(
+        patient_id=patient_id,
+        true_subtype=true_subtype,
+        predicted_subtype=result["predicted_subtype"],
+        confidence=result["confidence"],
+        all_probabilities=result["all_probabilities"],
+        modality_contribution=result["modality_contribution"],
+    )
+
+
+@app.get("/api/explain/{patient_id}", response_model=ExplainResponse)
+def explain(patient_id: str, layer: str = "rna", top_k: int = 10, steps: int = 20):
+    """Gene-level attribution for one patient. `steps` defaults lower (20 vs the
+    50 used in evaluation/attribution.py) to keep API latency reasonable for a
+    live demo - reduces precision slightly but is much faster per request."""
+    if patient_id not in STATE["patient_to_idx"]:
+        raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found in cohort")
+    if layer not in ("rna", "mirna", "meth"):
+        raise HTTPException(status_code=400, detail="layer must be one of: rna, mirna, meth")
+
+    idx = STATE["patient_to_idx"][patient_id]
+    attribution, pred_class, _ = integrated_gradients(
+        STATE["model"], STATE["graphs"], target_layer=layer, patient_idx=idx, steps=steps
+    )
+
+    feature_names = STATE["feature_names"][layer]
+
+    top = top_attributed_features(attribution, feature_names, top_k=top_k)
+    return ExplainResponse(
+        patient_id=patient_id,
+        layer=layer,
+        top_genes=[GeneAttribution(gene=name, score=score) for name, score, _ in top],
+    )
+
+
+@app.get("/api/metrics")
+def metrics():
+    """Overall model performance for the dashboard. Returns None if
+    metrics.json hasn't been generated yet - see metrics_seed.py."""
+    if STATE["metrics"] is None:
+        raise HTTPException(status_code=404, detail="Metrics not yet generated - run metrics_seed.py")
+    return STATE["metrics"]

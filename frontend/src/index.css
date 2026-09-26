@@ -1,0 +1,286 @@
+:root {
+  --ink: #0F1419;
+  --panel: #161D24;
+  --panel-raised: #1C242D;
+  --line: #262F39;
+  --teal: #3FBFAE;
+  --teal-dim: #2A8577;
+  --coral: #D97D66;
+  --text: #EDEFF2;
+  --text-muted: #8B95A1;
+  --text-faint: #565F6B;
+
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--teal-dim); color: var(--ink); }
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 800px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .sidebar.open { display: flex; }
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  border-right: 1px solid var(--line);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+.brand {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+  font-family: var(--mono);
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.nav-tab.active { color: var(--teal); background: rgba(63, 191, 174, 0.1); }
+.nav-tab:hover:not(.active) { color: var(--text); }
+
+.search-input {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 9px 11px;
+  border-radius: 6px;
+  outline: none;
+}
+.search-input:focus { border-color: var(--teal-dim); }
+
+.patient-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.patient-row {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+.patient-row:hover { background: var(--panel); }
+.patient-row.selected { background: rgba(63, 191, 174, 0.12); }
+.patient-id { font-family: var(--mono); color: var(--text); }
+.patient-subtype { font-family: var(--mono); color: var(--text-faint); font-size: 11px; }
+
+/* ---- Main ---- */
+.main {
+  padding: 36px 48px;
+  max-width: 900px;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+
+/* ---- Hero prediction card ---- */
+.hero {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 32px;
+  background: var(--panel);
+  margin-bottom: 32px;
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 24px;
+}
+
+.hero-id {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.hero-true {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.hero-predicted {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.hero-subtype {
+  font-family: var(--serif);
+  font-size: 44px;
+  font-weight: 500;
+  color: var(--teal);
+  line-height: 1;
+}
+
+.hero-confidence {
+  font-family: var(--mono);
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.hero-match {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-family: var(--mono);
+}
+.hero-match.correct { background: rgba(63, 191, 174, 0.15); color: var(--teal); }
+.hero-match.incorrect { background: rgba(217, 125, 102, 0.15); color: var(--coral); }
+
+/* probability bars */
+.prob-bars { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+.prob-row { display: grid; grid-template-columns: 70px 1fr 50px; align-items: center; gap: 12px; }
+.prob-label { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.prob-track { height: 6px; background: var(--panel-raised); border-radius: 3px; overflow: hidden; }
+.prob-fill { height: 100%; background: var(--teal); border-radius: 3px; transform-origin: left; animation: grow 0.7s ease-out; }
+.prob-value { font-family: var(--mono); font-size: 12px; color: var(--text-faint); text-align: right; }
+
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ---- Modality contribution ---- */
+.card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+  background: var(--panel);
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.modality-row { display: grid; grid-template-columns: 100px 1fr 44px; align-items: center; gap: 12px; margin-bottom: 10px; }
+.modality-label { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.modality-track { height: 10px; background: var(--panel-raised); border-radius: 5px; overflow: hidden; }
+.modality-fill { height: 100%; border-radius: 5px; animation: grow 0.7s ease-out; }
+.modality-value { font-family: var(--mono); font-size: 12px; text-align: right; }
+
+/* ---- Gene list ---- */
+.gene-list { display: flex; flex-direction: column; }
+.gene-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 100px;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: center;
+}
+.gene-row:last-child { border-bottom: none; }
+.gene-name { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+.gene-score { font-family: var(--mono); font-size: 12.5px; text-align: right; }
+.gene-score.positive { color: var(--teal); }
+.gene-score.negative { color: var(--coral); }
+.gene-direction { font-size: 11px; color: var(--text-faint); }
+
+.layer-toggle { display: flex; gap: 6px; margin-bottom: 16px; }
+.layer-btn {
+  background: var(--panel-raised);
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 11px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.layer-btn.active { border-color: var(--teal-dim); color: var(--teal); }
+
+/* ---- Metrics dashboard ---- */
+.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.metric-box { border: 1px solid var(--line); border-radius: 8px; padding: 18px; background: var(--panel); }
+.metric-num { font-family: var(--serif); font-size: 32px; color: var(--teal); }
+.metric-name { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+
+.confusion-grid {
+  display: grid;
+  grid-template-columns: 90px repeat(5, 1fr);
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.cm-header, .cm-rowlabel { color: var(--text-faint); padding: 6px; }
+.cm-header { text-align: center; }
+.cm-rowlabel { display: flex; align-items: center; }
+.cm-cell { padding: 10px 6px; text-align: center; border-radius: 4px; color: var(--text); }
+
+.ablation-row { display: grid; grid-template-columns: 90px 1fr 60px; align-items: center; gap: 12px; margin-bottom: 10px; }
+.ablation-track { height: 8px; background: var(--panel-raised); border-radius: 4px; overflow: hidden; }
+.ablation-fill { height: 100%; border-radius: 4px; }
+
+.empty-state { color: var(--text-faint); font-size: 13px; padding: 40px 0; }
+.loading { color: var(--text-faint); font-family: var(--mono); font-size: 12px; }
