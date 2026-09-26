@@ -143,8 +143,7 @@ def train_one_fold(
         if epoch % 20 == 0 or epochs_without_improvement == 0:
             tr_loss = loss.item()
             print(
-                f"  [fold {fold_num}] epoch {epoch:3d} | "
-                f"loss={tr_loss:.4f} | val_f1={val_f1:.4f}"
+                f"  [fold {fold_num}] epoch {epoch:3d} | loss={tr_loss:.4f} | val_f1={val_f1:.4f}"
             )
 
         if epochs_without_improvement >= cfg.early_stop_patience:

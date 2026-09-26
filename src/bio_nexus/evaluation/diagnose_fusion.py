@@ -38,10 +38,7 @@ def main():
     pool_weights = pool_weights.numpy()  # [646, 3] -> RNA, miRNA, methylation
 
     print("=== Fusion pooling weights across all 646 patients ===")
-    print(
-        "(if fusion learned to trust miRNA/meth more than RNA, "
-        "RNA's mean should be lower)\n"
-    )
+    print("(if fusion learned to trust miRNA/meth more than RNA, RNA's mean should be lower)\n")
     layer_names = ["rna", "mirna", "meth"]
     for i, name in enumerate(layer_names):
         col = pool_weights[:, i]

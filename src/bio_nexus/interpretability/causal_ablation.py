@@ -143,9 +143,7 @@ if __name__ == "__main__":
     model.eval()
 
     print("Causal ablation validation: top-20 attributed RNA genes vs 20 random genes")
-    print(
-        "(measured in LOGIT space, not softmax probability, to avoid saturation)\n"
-    )
+    print("(measured in LOGIT space, not softmax probability, to avoid saturation)\n")
     print(
         f"{'Patient':<15} {'Predicted':<10} {'Confidence':<12} {'Top-K Logit Drop':<18} "
         f"{'Random Logit Drop (mean+/-std)':<32} {'Ratio':<8}"
@@ -161,7 +159,7 @@ if __name__ == "__main__":
         pred_cls = result["predicted_class"]
         conf = f"{result['original_confidence']:.1%}"
         top_drop = f"{result['top_k_logit_drop']:+.4f}"
-        m_val, s_val = result['random_logit_drop_mean'], result['random_logit_drop_std']
+        m_val, s_val = result["random_logit_drop_mean"], result["random_logit_drop_std"]
         rand_drop = f"{m_val:+.4f} +/- {s_val:.4f}"
         ratio_str = f"{result['ratio_top_vs_random']:.2f}x"
         print(f"{p_id:<15} {pred_cls:<10} {conf:<12} {top_drop:<18} {rand_drop:<32} {ratio_str:<8}")

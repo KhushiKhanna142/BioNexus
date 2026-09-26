@@ -263,9 +263,7 @@ def main():
     # ---- Align all 3 layers to the SAME shared patient index ----
     shared_patients = rna.index.intersection(mirna.index).intersection(meth.index)
     shared_patients = sorted(shared_patients)
-    print(
-        f"\nShared patient index across 3 layers: {len(shared_patients)} patients"
-    )
+    print(f"\nShared patient index across 3 layers: {len(shared_patients)} patients")
 
     rna = rna.loc[shared_patients]
     mirna = mirna.loc[shared_patients]
