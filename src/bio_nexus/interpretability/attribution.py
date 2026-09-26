@@ -41,7 +41,7 @@ def integrated_gradients(
     graphs: list,
     target_layer: str,
     patient_idx: int,
-    target_class: int = None,
+    target_class: int | None = None,
     steps: int = 50,
 ):
     """
@@ -59,7 +59,7 @@ def integrated_gradients(
     if target_class is None:
         with torch.no_grad():
             logits, _, _, _ = model(*graphs)
-            target_class = torch.argmax(logits[patient_idx]).item()
+            target_class = int(torch.argmax(logits[patient_idx]).item())
 
     alphas = torch.linspace(0, 1, steps)
     accumulated_grad = torch.zeros_like(x_real)

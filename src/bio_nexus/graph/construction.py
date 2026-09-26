@@ -90,7 +90,7 @@ def build_knn_graph(feature_matrix: pd.DataFrame, cfg: GraphConstructionConfig):
 
 
 def build_all_layer_graphs(
-    processed_final_dir: Path, out_dir: Path, cfg: GraphConstructionConfig = None
+    processed_final_dir: Path, out_dir: Path, cfg: GraphConstructionConfig | None = None
 ):
     """Build and save a k-NN graph for each of the 3 omics layers, using
     the final locked-in cohort matrices (rna/mirna/meth_matrix_final.csv)."""

@@ -107,7 +107,9 @@ class GraphGPSEncoder(nn.Module):
         return embeddings
 
 
-def encode_layer_graph(graph, cfg: GraphTransformerConfig = None) -> torch.Tensor:
+def encode_layer_graph(
+    graph, cfg: GraphTransformerConfig | None = None
+) -> tuple[torch.Tensor, GraphGPSEncoder]:
     """Convenience wrapper: build an encoder sized to the graph's input
     feature dimension, and produce embeddings in one call.
     `graph` is a torch_geometric.data.Data object (from graph/construction.py),

@@ -164,7 +164,7 @@ def load_methylation_matrix(mapping: pd.DataFrame, data_dir: Path) -> pd.DataFra
 
     # ---- Main pass: read beta column only, assign by position ----
     values = np.full((len(kept_case_files), n_probes), np.nan, dtype=np.float32)
-    case_ids = []
+    case_ids: list[str] = []
 
     for i, (case_id, fpath) in enumerate(kept_case_files):
         try:

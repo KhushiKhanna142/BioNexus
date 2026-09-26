@@ -11,6 +11,7 @@ Run with:
 
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 import torch
 from fastapi import FastAPI, HTTPException
@@ -27,7 +28,9 @@ from bio_nexus.train import load_data
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 
-STATE = {}  # populated at startup: model, graphs, y, node_order, feature_names, metrics
+STATE: dict[
+    str, Any
+] = {}  # populated at startup: model, graphs, y, node_order, feature_names, metrics
 
 
 @asynccontextmanager

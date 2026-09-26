@@ -104,7 +104,7 @@ class CrossAttentionFusion(nn.Module):
         return fused, attn_weights, pool_weights
 
 
-def get_modality_contribution(pool_weights: torch.Tensor) -> dict:
+def get_modality_contribution(pool_weights: torch.Tensor) -> list[dict[str, float]]:
     """Convenience function for the frontend: converts the per-patient
     pooling weights into a readable {modality: weight} dict per patient.
     pool_weights: [num_patients, 3] (order: RNA, miRNA, methylation)"""

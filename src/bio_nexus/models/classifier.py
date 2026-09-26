@@ -46,7 +46,7 @@ class BioNexusClassifier(nn.Module):
         rna_in_features: int,
         mirna_in_features: int,
         meth_in_features: int,
-        cfg: ClassifierConfig = None,
+        cfg: ClassifierConfig | None = None,
     ):
         super().__init__()
         self.cfg = cfg or ClassifierConfig()

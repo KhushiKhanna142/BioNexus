@@ -152,7 +152,8 @@ def train_one_fold(
             )
             break
 
-    model.load_state_dict(best_state)
+    if best_state is not None:
+        model.load_state_dict(best_state)
     model.eval()
     with torch.no_grad():
         logits, _, _, _ = model(rna_graph, mirna_graph, meth_graph)

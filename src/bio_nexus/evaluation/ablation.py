@@ -114,7 +114,8 @@ def train_one_fold_single(
         if epochs_without_improvement >= cfg.early_stop_patience:
             break
 
-    model.load_state_dict(best_state)
+    if best_state is not None:
+        model.load_state_dict(best_state)
     model.eval()
     with torch.no_grad():
         val_preds = torch.argmax(model(graph)[val_mask], dim=-1).cpu().numpy()
