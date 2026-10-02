@@ -21,6 +21,8 @@ class-weighted loss, and guards against overfitting (4.68M params vs
 646 patients) via weight decay + early stopping on validation macro-F1.
 """
 
+import json
+import os
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +48,130 @@ class TrainConfig:
     seed: int = 42
 
 
+def _get_mlflow_tracking_uri(base_dir: Path | None = None) -> str | None:
+    uri = os.getenv("MLFLOW_TRACKING_URI")
+    if uri:
+        return uri
+    # Optional default local SQLite tracking URI for standalone experiments
+    if os.getenv("ENABLE_LOCAL_MLFLOW", "1").lower() in ("1", "true", "yes"):
+        if base_dir:
+            db_path = (base_dir / "mlflow.db").resolve()
+            return f"sqlite:///{db_path}"
+        return "sqlite:///mlflow.db"
+    return None
+
+
+def _maybe_start_mlflow(cfg: TrainConfig, extra_params: dict | None = None, base_dir: Path | None = None) -> str | None:
+    uri = _get_mlflow_tracking_uri(base_dir)
+    if not uri:
+        print("[mlflow] MLFLOW_TRACKING_URI unset — skipping tracking.")
+        return None
+    try:
+        import mlflow
+
+        mlflow.set_tracking_uri(uri)
+        exp_name = os.getenv("MLFLOW_EXPERIMENT", "bionexus-cancer-subtype")
+        mlflow.set_experiment(exp_name)
+        run = mlflow.start_run()
+        params = {
+            "n_folds": cfg.n_folds,
+            "max_epochs": cfg.max_epochs,
+            "lr": cfg.lr,
+            "weight_decay": cfg.weight_decay,
+            "early_stop_patience": cfg.early_stop_patience,
+            "seed": cfg.seed,
+            "architecture": "graphgps_cross_attention",
+            "cohort": "TCGA-BRCA",
+            "num_subtypes": len(PAM50_SUBTYPES),
+        }
+        if extra_params:
+            params.update(extra_params)
+        mlflow.log_params(params)
+        mlflow.set_tags({
+            "project": "bio_nexus",
+            "task": "pam50_subtyping",
+            "model_family": "GraphGPS",
+            "framework": "PyTorch Geometric",
+        })
+        print(f"[mlflow] Started tracking run: id={run.info.run_id}, uri={uri}, experiment={exp_name}")
+        return run.info.run_id
+    except Exception as exc:
+        print(f"[mlflow] failed to start: {exc}")
+        return None
+
+
+def _maybe_finish_mlflow(
+    run_id: str | None,
+    payload: dict,
+    base_dir: Path,
+    best_model: nn.Module | None = None,
+) -> None:
+    if not run_id:
+        return
+    try:
+        import mlflow
+        import mlflow.pytorch
+
+        fm = payload.get("fused_model", {})
+        mlflow.log_metrics(
+            {
+                "accuracy_mean": fm.get("accuracy_mean", 0),
+                "accuracy_std": fm.get("accuracy_std", 0),
+                "macro_f1_mean": fm.get("macro_f1_mean", 0),
+                "macro_f1_std": fm.get("macro_f1_std", 0),
+                "weighted_f1_mean": fm.get("weighted_f1_mean", 0),
+                "weighted_f1_std": fm.get("weighted_f1_std", 0),
+            }
+        )
+
+        metrics_path = base_dir / "data" / "processed" / "results" / "metrics.json"
+        if metrics_path.exists():
+            mlflow.log_artifact(str(metrics_path), artifact_path="evaluation")
+
+        best_ckpt = base_dir / "data" / "processed" / "checkpoints" / "best_model.pt"
+        if best_ckpt.exists():
+            mlflow.log_artifact(str(best_ckpt), artifact_path="checkpoints")
+
+        # Log PyTorch Model artifact
+        if best_model is not None:
+            try:
+                mlflow.pytorch.log_model(
+                    pytorch_model=best_model,
+                    artifact_path="model",
+                )
+                print("[mlflow] Logged PyTorch model artifact to 'model/'")
+            except Exception as m_err:
+                print(f"[mlflow] PyTorch model logging warning: {m_err}")
+
+        uri = mlflow.get_tracking_uri()
+        info = {
+            "run_id": run_id,
+            "model_artifact_path": "model",
+            "model_uri": f"runs:/{run_id}/model",
+            "tracking_uri": uri,
+            "experiment_name": os.getenv("MLFLOW_EXPERIMENT", "bionexus-cancer-subtype"),
+            "metrics": {
+                "accuracy_mean": fm.get("accuracy_mean", 0),
+                "macro_f1_mean": fm.get("macro_f1_mean", 0),
+            },
+        }
+        info_path = base_dir / "reports" / "experiment_info.json"
+        info_path.parent.mkdir(parents=True, exist_ok=True)
+        info_path.write_text(json.dumps(info, indent=2))
+        print(f"[mlflow] Saved experiment info to {info_path}")
+
+        card_path = base_dir / "data" / "serving" / "model_card.json"
+        if card_path.exists():
+            card = json.loads(card_path.read_text())
+            card["mlflow_run_id"] = run_id
+            card_path.write_text(json.dumps(card, indent=2))
+
+        mlflow.end_run()
+        print(f"[mlflow] Completed run {run_id}")
+    except Exception as exc:
+        print(f"[mlflow] finish failed: {exc}")
+
+
 def set_seed(seed: int):
     random.seed(seed)
     np.random.seed(seed)
@@ -55,22 +181,59 @@ def set_seed(seed: int):
 def load_data(base_dir: Path):
     graph_dir = base_dir / "data" / "processed" / "graphs"
     final_dir = base_dir / "data" / "processed" / "final"
+    serving_dir = base_dir / "data" / "serving"
 
-    rna_graph = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
-    mirna_graph = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
-    meth_graph = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
+    if (graph_dir / "rna_graph.pt").exists() and (graph_dir / "graph_node_order.csv").exists() and (final_dir / "labels_final.csv").exists():
+        rna_graph = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
+        mirna_graph = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
+        meth_graph = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
+        node_order = pd.read_csv(graph_dir / "graph_node_order.csv")["patient_id"].tolist()
+        labels_df = pd.read_csv(final_dir / "labels_final.csv").set_index("patient_id")
+        labels_df = labels_df.loc[node_order]
+        label_to_idx = {name: i for i, name in enumerate(PAM50_SUBTYPES)}
+        y = labels_df["subtype"].map(label_to_idx).to_numpy()
+        return rna_graph, mirna_graph, meth_graph, y.astype(int), node_order
 
-    node_order = pd.read_csv(graph_dir / "graph_node_order.csv")["patient_id"].tolist()
-    labels_df = pd.read_csv(final_dir / "labels_final.csv").set_index("patient_id")
-    labels_df = labels_df.loc[node_order]  # align label order to graph node order EXACTLY
+    # Fallback / build from data/serving/
+    print("[data] Constructing PyG multi-omics graphs from data/serving/...")
+    from torch_geometric.data import Data
 
+    patients_df = pd.read_csv(serving_dir / "patients.csv")
+    node_order = patients_df["patient_id"].tolist()
     label_to_idx = {name: i for i, name in enumerate(PAM50_SUBTYPES)}
-    y = labels_df["subtype"].map(label_to_idx).to_numpy()
+    y = patients_df["true_pam50"].map(label_to_idx).to_numpy()
 
-    if np.isnan(y).any():
-        raise ValueError(
-            "Some patients have a subtype not in PAM50_SUBTYPES - check labels_final.csv"
-        )
+    def _build_pyg_data(matrix_file: str, edges_file: str) -> Data:
+        mat_df = pd.read_parquet(serving_dir / matrix_file).loc[node_order]
+        edges_df = pd.read_parquet(serving_dir / edges_file)
+        x_tensor = torch.tensor(mat_df.values, dtype=torch.float32)
+
+        src = edges_df["src_idx"].values
+        dst = edges_df["dst_idx"].values
+        edge_index = torch.tensor(np.vstack([src, dst]), dtype=torch.long)
+
+        w_col = "weight" if "weight" in edges_df.columns else "cosine_similarity"
+        weights = edges_df[w_col].values if w_col in edges_df.columns else np.ones(len(src), dtype=np.float32)
+        edge_attr = torch.tensor(weights, dtype=torch.float32)
+
+        return Data(x=x_tensor, edge_index=edge_index, edge_attr=edge_attr)
+
+    rna_graph = _build_pyg_data("rna_matrix.parquet", "rna_graph_edges.parquet")
+    mirna_graph = _build_pyg_data("mirna_matrix.parquet", "mirna_graph_edges.parquet")
+    meth_graph = _build_pyg_data("meth_matrix.parquet", "meth_graph_edges.parquet")
+
+    # Cache to data/processed/graphs
+    try:
+        graph_dir.mkdir(parents=True, exist_ok=True)
+        final_dir.mkdir(parents=True, exist_ok=True)
+        torch.save(rna_graph, graph_dir / "rna_graph.pt")
+        torch.save(mirna_graph, graph_dir / "mirna_graph.pt")
+        torch.save(meth_graph, graph_dir / "meth_graph.pt")
+        pd.DataFrame({"patient_id": node_order}).to_csv(graph_dir / "graph_node_order.csv", index=False)
+        pd.DataFrame({"patient_id": node_order, "subtype": patients_df["true_pam50"]}).to_csv(final_dir / "labels_final.csv", index=False)
+        print(f"[data] Cached PyG graphs to {graph_dir}")
+    except Exception as save_err:
+        print(f"[data] Warning caching graphs: {save_err}")
 
     return rna_graph, mirna_graph, meth_graph, y.astype(int), node_order
 
@@ -187,6 +350,16 @@ def main():
     fold_metrics = []
     best_fold_model = None
     best_fold_f1 = -1.0
+    ckpt_dir = BASE_DIR / "data" / "processed" / "checkpoints"
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+
+    extra_params = {
+        "rna_in_features": int(rna_graph.x.shape[1]),
+        "mirna_in_features": int(mirna_graph.x.shape[1]),
+        "meth_in_features": int(meth_graph.x.shape[1]),
+        "num_patients": int(len(y)),
+    }
+    mlflow_run_id = _maybe_start_mlflow(cfg, extra_params=extra_params, base_dir=BASE_DIR)
 
     for fold_num, (train_idx, val_idx) in enumerate(skf.split(np.zeros(len(y)), y), start=1):
         print(f"\n=== Fold {fold_num}/{cfg.n_folds} ===")
@@ -198,6 +371,22 @@ def main():
             f"macro_f1={metrics['macro_f1']:.4f}, weighted_f1={metrics['weighted_f1']:.4f}"
         )
         fold_metrics.append(metrics)
+        torch.save(model.state_dict(), ckpt_dir / f"fold_{fold_num}.pt")
+        print(f"  Saved {ckpt_dir / f'fold_{fold_num}.pt'}")
+
+        if mlflow_run_id:
+            try:
+                import mlflow
+                mlflow.log_metrics(
+                    {
+                        f"fold_{fold_num}_accuracy": float(metrics["accuracy"]),
+                        f"fold_{fold_num}_macro_f1": float(metrics["macro_f1"]),
+                        f"fold_{fold_num}_weighted_f1": float(metrics["weighted_f1"]),
+                    },
+                    step=fold_num,
+                )
+            except Exception as e:
+                print(f"[mlflow] Warning logging fold metrics: {e}")
 
         if metrics["macro_f1"] > best_fold_f1:
             best_fold_f1 = metrics["macro_f1"]
@@ -217,10 +406,30 @@ def main():
     )
     print(fold_metrics[np.argmax(f1s)]["confusion_matrix"])
 
-    ckpt_dir = BASE_DIR / "data" / "processed" / "checkpoints"
-    ckpt_dir.mkdir(parents=True, exist_ok=True)
     torch.save(best_fold_model.state_dict(), ckpt_dir / "best_model.pt")
     print(f"\nSaved best-fold model checkpoint to {ckpt_dir / 'best_model.pt'}")
+
+    results_dir = BASE_DIR / "data" / "processed" / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "fused_model": {
+            "accuracy_mean": float(np.mean(accs)),
+            "accuracy_std": float(np.std(accs)),
+            "macro_f1_mean": float(np.mean(f1s)),
+            "macro_f1_std": float(np.std(f1s)),
+            "weighted_f1_mean": float(np.mean(wf1s)),
+            "weighted_f1_std": float(np.std(wf1s)),
+            "confusion_matrix": {
+                "labels": PAM50_SUBTYPES,
+                "matrix": fold_metrics[int(np.argmax(f1s))]["confusion_matrix"].tolist(),
+            },
+        },
+        "n_patients": int(len(y)),
+        "n_folds": cfg.n_folds,
+    }
+    (results_dir / "metrics.json").write_text(json.dumps(payload, indent=2))
+    print(f"Wrote {results_dir / 'metrics.json'}")
+    _maybe_finish_mlflow(mlflow_run_id, payload, BASE_DIR, best_model=best_fold_model)
 
 
 if __name__ == "__main__":

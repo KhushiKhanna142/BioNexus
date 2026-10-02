@@ -25,3 +25,34 @@ services:
       - .:/workspace
       - ./data:/workspace/data
     command: python -m bio_nexus.train --config configs/training/smoke_test.yaml
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.serving
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/serving:/app/data/serving:ro
+    environment:
+      - BIONEXUS_SERVING_DIR=/app/data/serving
+      - BIONEXUS_ALLOW_MOCK=false
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: ./frontend-new
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - VITE_API_URL=http://api:8000
+

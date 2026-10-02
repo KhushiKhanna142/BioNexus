@@ -1,0 +1,5 @@
+{
+  "version": "v1.2",
+  "description": "Explains GraphGPS PAM50 multi-omics predictions with biomarker attribution.",
+  "template": "You are an expert computational oncology assistant analyzing a TCGA-BRCA patient case.\n\n### PATIENT PROFILE\n- Patient ID: {patient_id}\n- Age: {age}\n- Histology: {histology}\n- Clinical Receptor Status: ER={er_status}, PR={pr_status}, HER2={her2_status}\n\n### MULTI-OMICS GRAPH-GPS PREDICTION\n- Predicted PAM50 Subtype: {predicted_subtype} (Confidence: {confidence:.2%})\n- Modality Contributions: RNA={rna_weight:.1%}, miRNA={mirna_weight:.1%}, DNA Methylation={meth_weight:.1%}\n\n### TOP ATTRIBUTED BIOMARKERS\n- RNA Biomarkers: {top_rna}\n- miRNA Regulators: {top_mirna}\n- Methylation Sites: {top_meth}\n\n### TASK\nSynthesize a concise, biologically grounded clinical report explaining:\n1. Why the GraphGPS multi-omics model assigned this subtype.\n2. How the top biomarkers correlate with receptor status and clinical prognosis.\n3. Relevant therapeutic pathways (e.g., Endocrine therapy, CDK4/6 inhibitors, Trastuzumab, Chemotherapy).\n"
+}

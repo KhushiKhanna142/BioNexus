@@ -1,0 +1,30 @@
+{
+  "git_commit": "4c267225b360d1e6a3e5ee2cf831c72fbb926ea4",
+  "generated_at": "2026-10-02T16:09:26.736295+00:00",
+  "random_seed": 42,
+  "library_versions": {
+    "python": "3.13.9 | packaged by Anaconda, Inc. | (main, Oct 21 2025, 19:09:58) [MSC v.1929 64 bit (AMD64)]",
+    "torch": "2.10.0+cpu",
+    "pandas": "2.3.3",
+    "numpy": "2.3.5",
+    "umap": "0.5.12"
+  },
+  "file_hashes": {
+    "oof_predictions.parquet": "4ee4c64f43f5d6c9c89d62fc5fd92719d1f67aa4258a9266e84f7a02c9da3d0b",
+    "patients.csv": "95b4b7c531e555b17435effd968b494bad75c528a7682f7eb6106d56333b8b35",
+    "patient_clinical.csv": "05b6604f8ba5246e76b27ad32fdde457c01b931d569f017eed86d9e85a51e4f5",
+    "metrics.json": "9d408b7e69ead33bd0811fe5a7ce893501f3a48be9f77d1e0ddc710a151ae55a",
+    "fusion_diagnosis.json": "5d19c81c89a3106a47fd2fc9a6267f32a3c4eca3c8e5128ed19b09e80d1983cc",
+    "causal_validation.json": "6606bb599604b2811fdf6796f93cb002009fbda54e8d04fe5e7b544d0ac1d959",
+    "graph_stats.json": "5b0831b966f76d21ede9f3ad02353c29b74ea0d02a6f65381b98e56f5655198b",
+    "embeddings_2d.parquet": "cb4037b18d9484cf7354c20ef0df31db30a46f21f93c3437a55ee078ef826eac",
+    "survival.json": "26c5a07a156f629706063f6137a50a6ad201946cd7b99b78f1a3a93f947644a9",
+    "model_card.json": "99e0967443e86950764031173647c759afa0b8a8e739cdabf774278a615cdcf2",
+    "rna_matrix.parquet": "611d7a45f1bef8e0069dffe1140ee8887b2a8357b0222f720ff25271ee2b3eb3",
+    "mirna_matrix.parquet": "979c59457e65158550b6677b321d6ffe14618cec8b0b5ff3098c81cedf0f7a98",
+    "meth_matrix.parquet": "f04aa2536ea302fed1a2b65c2eb9f0c639196ec3238d41dc9ec5471793123f7a",
+    "rna_features.csv": "76caa5e1a78c694d3f8b2f23a4ca8f332e5c54119b5d01a441f93bd01362b61b",
+    "mirna_features.csv": "b19c5bbc69b7542770e6c227718da4b629a1a3b88151e449661455fd6fcd7a45",
+    "meth_features.csv": "70ba28b54fe3814c09804f376127e41cea0c0a11b173954c913e7e916a6f768b"
+  }
+}

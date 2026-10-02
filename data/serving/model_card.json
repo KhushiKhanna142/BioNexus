@@ -1,0 +1,18 @@
+{
+  "name": "BioNexus GraphGPS multi-omics PAM50 classifier",
+  "architecture": "3x GraphGPS (GINE + global attention) + cross-attention fusion + MLP",
+  "param_count": 1124970,
+  "git_commit": "4c267225b360d1e6a3e5ee2cf831c72fbb926ea4",
+  "exported_at": "2026-10-02T16:09:26.686929+00:00",
+  "data_version": "TCGA-BRCA locked cohort (646 patients)",
+  "mlflow_run_id": "4fa14695aded458faa6b65cf77411707",
+  "training": "transductive 5-fold CV, labels masked only",
+  "prediction_type": "out_of_fold",
+  "subtypes": [
+    "LumA",
+    "LumB",
+    "Her2",
+    "Basal",
+    "Normal"
+  ]
+}

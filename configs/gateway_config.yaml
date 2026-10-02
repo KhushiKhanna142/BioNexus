@@ -1,0 +1,27 @@
+# MLflow AI Gateway Configuration for BioNexus
+routes:
+  - name: bionexus-clinical-completions
+    route_type: llm/v1/completions
+    model:
+      provider: openai
+      name: gpt-4o-mini
+      config:
+        openai_api_key: $OPENAI_API_KEY
+        temperature: 0.1
+        max_tokens: 1024
+
+  - name: bionexus-biomarker-embeddings
+    route_type: llm/v1/embeddings
+    model:
+      provider: openai
+      name: text-embedding-3-small
+      config:
+        openai_api_key: $OPENAI_API_KEY
+
+  - name: bionexus-local-classifier
+    route_type: llm/v1/chat
+    model:
+      provider: custom
+      name: bionexus-subtype-classifier
+      config:
+        model_uri: "models:/bionexus-subtype-classifier/Production"

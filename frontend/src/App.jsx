@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import PredictionPanel from './components/PredictionPanel'
 import MetricsDashboard from './components/MetricsDashboard'
+import PatientGraphExplorer from './components/PatientGraphExplorer'
 import { api } from './api'
 
 export default function App() {
@@ -30,7 +31,7 @@ export default function App() {
       />
       <main className="main">
         <div className="section-label">
-          {view === 'explorer' ? 'patient explorer' : 'model performance'}
+          {view === 'explorer' ? 'patient explorer' : (view === 'graph' ? 'patient graph explorer' : 'model performance')}
         </div>
         {error && (
           <div className="empty-state">
@@ -38,7 +39,12 @@ export default function App() {
             ({error})
           </div>
         )}
-        {!error && view === 'explorer' && <PredictionPanel patientId={selectedId} />}
+        {!error && view === 'explorer' && (
+          <PredictionPanel patientId={selectedId} onSelectPatient={setSelectedId} />
+        )}
+        {!error && view === 'graph' && (
+          <PatientGraphExplorer patientId={selectedId} onSelectPatient={setSelectedId} />
+        )}
         {!error && view === 'metrics' && <MetricsDashboard />}
       </main>
     </div>

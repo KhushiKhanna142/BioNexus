@@ -36,4 +36,11 @@ mlartifacts/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend-new/node_modules/
+frontend-new/dist/
+
+# Local database & temp files
+mlflow.db
+prompt_9_full.txt
+*.png
 

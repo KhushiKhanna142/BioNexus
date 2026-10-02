@@ -1,0 +1,71 @@
+{
+  "rna": {
+    "nodes": 646,
+    "edges": 11214,
+    "directed_edges": 11214,
+    "directed_knn_edges": 6460,
+    "undirected_edges_after_symmetrization": 5607,
+    "approx_undirected_edges": 5607,
+    "mean_degree": 17.3591,
+    "min_degree": 10,
+    "max_degree": 148,
+    "purity": 0.4098,
+    "neighbor_label_purity": {
+      "overall": 0.4098,
+      "per_subtype": {
+        "LumA": 0.5873,
+        "LumB": 0.1995,
+        "Her2": 0.0748,
+        "Basal": 0.2107,
+        "Normal": 0.0412
+      }
+    },
+    "connected_components": 1
+  },
+  "mirna": {
+    "nodes": 646,
+    "edges": 11264,
+    "directed_edges": 11264,
+    "directed_knn_edges": 6460,
+    "undirected_edges_after_symmetrization": 5632,
+    "approx_undirected_edges": 5632,
+    "mean_degree": 17.4365,
+    "min_degree": 10,
+    "max_degree": 158,
+    "purity": 0.3514,
+    "neighbor_label_purity": {
+      "overall": 0.3514,
+      "per_subtype": {
+        "LumA": 0.5244,
+        "LumB": 0.1938,
+        "Her2": 0.0435,
+        "Basal": 0.1814,
+        "Normal": 0.0386
+      }
+    },
+    "connected_components": 1
+  },
+  "meth": {
+    "nodes": 646,
+    "edges": 10548,
+    "directed_edges": 10548,
+    "directed_knn_edges": 6460,
+    "undirected_edges_after_symmetrization": 5274,
+    "approx_undirected_edges": 5274,
+    "mean_degree": 16.3282,
+    "min_degree": 10,
+    "max_degree": 136,
+    "purity": 0.3409,
+    "neighbor_label_purity": {
+      "overall": 0.3409,
+      "per_subtype": {
+        "LumA": 0.5086,
+        "LumB": 0.2161,
+        "Her2": 0.0529,
+        "Basal": 0.1627,
+        "Normal": 0.0299
+      }
+    },
+    "connected_components": 1
+  }
+}

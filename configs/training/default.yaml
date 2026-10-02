@@ -6,10 +6,10 @@ data:
   random_seed: 42
 
 model:
-  architecture: "graphormer"
-  hidden_dim: 256
-  num_layers: 4
-  num_heads: 8
+  architecture: "graphgps_cross_attention"
+  hidden_dim: 64
+  num_layers: 2
+  num_heads: 4
   dropout: 0.1
 
 training:

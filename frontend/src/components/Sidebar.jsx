@@ -16,7 +16,7 @@ const NAV_GROUPS = [
     label: 'Analysis',
     items: [
       { key: 'omics', label: 'Omics Explorer', icon: Layers, disabled: true },
-      { key: 'graph', label: 'Graph Explorer', icon: Share2, disabled: true },
+      { key: 'graph', label: 'Graph Explorer', icon: Share2 },
     ],
   },
   {
@@ -85,7 +85,7 @@ export default function Sidebar({ patients, selectedId, onSelect, view, onViewCh
         ))}
       </nav>
 
-      {view === 'explorer' && (
+      {(view === 'explorer' || view === 'graph') && (
         <div className="patient-panel">
           <input
             className="search-input"

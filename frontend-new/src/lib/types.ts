@@ -1,0 +1,312 @@
+// ============== Core Types ==============
+
+export type PAM50Subtype = 'LumA' | 'LumB' | 'Her2' | 'Basal' | 'Normal';
+
+export interface Patient {
+  id: string;
+  subtype?: PAM50Subtype;
+  true_pam50?: PAM50Subtype;
+  predicted_subtype?: PAM50Subtype;
+  confidence?: number;
+  fold_id?: number;
+  prediction_type?: string;
+  rna_available: boolean;
+  mirna_available: boolean;
+  methylation_available: boolean;
+  clinical?: ClinicalData;
+}
+
+export interface ClinicalData {
+  age?: number;
+  er_status?: string;
+  tumor_grade?: number;
+  lymph_node_status?: string;
+}
+
+export interface PredictionResult {
+  patient_id: string;
+  predicted_subtype: PAM50Subtype;
+  confidence: number;
+  probabilities: SubtypeProbabilities;
+  modality_weights: ModalityWeights;
+  description: string;
+  true_pam50?: PAM50Subtype;
+  fold_id?: number;
+  prediction_type?: string;
+  match?: boolean;
+}
+
+export interface SubtypeProbabilities {
+  LumA: number;
+  LumB: number;
+  Her2: number;
+  Basal: number;
+  Normal: number;
+}
+
+export interface ModalityWeights {
+  rna: number;
+  mirna: number;
+  methylation: number;
+}
+
+export interface BiomarkerEntry {
+  gene: string;
+  feature_id?: string;
+  importance: number;
+  attribution?: number;
+  effect: 'positive' | 'negative';
+  layer?: string;
+}
+
+export interface ExplanationResult {
+  patient_id: string;
+  biomarkers: BiomarkerEntry[];
+  method: string;
+  layer?: string;
+  steps?: number;
+}
+
+export interface ModelMetrics {
+  accuracy: number;
+  macro_f1: number;
+  per_class: Record<PAM50Subtype, { precision: number; recall: number; f1: number }>;
+  confusion_matrix: number[][];
+  single_omics: {
+    rna: { accuracy: number; f1: number; std: number };
+    mirna: { accuracy: number; f1: number; std: number };
+    methylation: { accuracy: number; f1: number; std: number };
+  };
+  fused: { accuracy: number; f1: number; std: number };
+}
+
+export interface CohortStats {
+  total_patients: number;
+  subtype_distribution: Record<string, number>;
+  funnel: FunnelStep[];
+  cv_label?: string;
+}
+
+export interface FunnelStep {
+  label: string;
+  count: number;
+  description: string;
+}
+
+export interface GraphNode {
+  id: string;
+  subtype: PAM50Subtype;
+  degree?: number;
+  index?: number;
+  x?: number;
+  y?: number;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  weight: number;
+}
+
+export interface PatientGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  layer?: string;
+  stats?: Record<string, number>;
+  layout_note?: string;
+}
+
+export interface OmicsProfile {
+  patient_id: string;
+  layer?: string;
+  n_total?: number;
+  features: { feature_id: string; symbol: string; value: number }[];
+}
+
+export interface PathwayEntry {
+  name: string;
+  p_value: number;
+  neg_log10_p: number;
+}
+
+export interface CausalValidation {
+  attributed_impact_median: number;
+  random_impact_median: number;
+  patients_larger_impact: number;
+  total_patients: number;
+  p_value: number;
+  fold_difference: number;
+  precomputed?: boolean;
+  wording?: string;
+}
+
+// ============== Graph Explorer Types ==============
+
+export interface NeighborLabelPurity {
+  overall: number;
+  per_subtype: Record<string, number>;
+}
+
+export interface GraphLayerSummary {
+  nodes: number;
+  edges: number;
+  mean_degree: number;
+  min_degree: number;
+  neighbor_label_purity: NeighborLabelPurity;
+  connected_components: number;
+}
+
+export interface GraphSummaryResponse {
+  rna: GraphLayerSummary;
+  mirna: GraphLayerSummary;
+  meth: GraphLayerSummary;
+}
+
+export interface EgoNodeModel {
+  patient_id: string;
+  pam50: PAM50Subtype;
+  predicted_pam50?: PAM50Subtype;
+  hop: number;
+  degree: number;
+  is_directed_neighbor: boolean;
+  fold_id?: number;
+}
+
+export interface EgoEdgeModel {
+  source: string;
+  target: string;
+  cosine_similarity: number;
+  directed_knn_flag: boolean;
+}
+
+export interface EgoStatsModel {
+  n_nodes: number;
+  n_edges: number;
+  subtype_counts: Record<string, number>;
+  same_subtype_fraction: number;
+  mean_similarity: number;
+  truncated?: boolean;
+}
+
+export interface ClinicalDetailsModel {
+  patient_id: string;
+  true_pam50: string;
+  predicted_pam50?: string;
+  confidence?: number;
+  age: number | string;
+  er_status: string;
+  pr_status: string;
+  her2_status: string;
+  tumor_grade: string;
+  lymph_node_status: string;
+  histology: string;
+  cancer_type: string;
+}
+
+export interface TopNeighborItem {
+  rank: number;
+  patient_id: string;
+  pam50: PAM50Subtype;
+  similarity: number;
+  is_directed: boolean;
+}
+
+export interface CrossModalityNeighborItem {
+  patient_id: string;
+  rna: number;
+  mirna: number;
+  methylation: number;
+  shared: boolean;
+}
+
+export interface GraphStatsDetailsModel {
+  total_patients: number;
+  total_edges: number;
+  neighbors_k: number;
+  mean_similarity: number;
+  same_subtype_neighbors: string;
+}
+
+export interface PatientEgoGraphResponse {
+  patient_id: string;
+  layer: string;
+  hops: number;
+  center_node: EgoNodeModel;
+  nodes: EgoNodeModel[];
+  edges: EgoEdgeModel[];
+  stats: EgoStatsModel;
+  top_10_neighbors?: TopNeighborItem[];
+  cross_modality_neighbors?: CrossModalityNeighborItem[];
+  clinical_details?: ClinicalDetailsModel;
+  graph_stats_details?: GraphStatsDetailsModel;
+}
+
+export interface LayerNeighborCompare {
+  neighbors: string[];
+  same_subtype_fraction: number;
+  mean_similarity: number;
+  count: number;
+}
+
+export interface PatientGraphCompareResponse {
+  patient_id: string;
+  true_pam50: string;
+  layers: Record<string, LayerNeighborCompare>;
+  overlap_counts: {
+    rna_mirna: number;
+    rna_meth: number;
+    mirna_meth: number;
+    all_three: number;
+  };
+  consensus_neighbors: string[];
+  all_neighbors: string[];
+}
+
+export interface GraphOverviewResponse {
+  layer: string;
+  nodes: EgoNodeModel[];
+  edges: EgoEdgeModel[];
+  stats: Record<string, any>;
+  thinned_for_display: boolean;
+  layout_note: string;
+}
+
+// ============== Subtype Metadata ==============
+
+export const SUBTYPE_COLORS: Record<PAM50Subtype, string> = {
+  LumA: '#4F6FE8',
+  LumB: '#F47C9C',
+  Her2: '#F5B942',
+  Basal: '#8B6FE0',
+  Normal: '#34C38F',
+};
+
+export const SUBTYPE_LABELS: Record<PAM50Subtype, string> = {
+  LumA: 'Luminal A',
+  LumB: 'Luminal B',
+  Her2: 'HER2-enriched',
+  Basal: 'Basal-like',
+  Normal: 'Normal-like',
+};
+
+export const SUBTYPE_DESCRIPTIONS: Record<PAM50Subtype, string> = {
+  LumA: 'Luminal A subtype is typically associated with hormone receptor positivity and better prognosis.',
+  LumB: 'Luminal B subtype is hormone receptor positive but tends to grow faster than Luminal A.',
+  Her2: 'HER2-enriched subtype overexpresses the HER2/neu protein and may benefit from targeted therapy.',
+  Basal: 'Basal-like subtype lacks hormone receptors and HER2, often associated with more aggressive disease.',
+  Normal: 'Normal-like subtype resembles normal breast tissue gene expression patterns.',
+};
+
+export const MODALITY_COLORS = {
+  rna: '#8B6FE0',
+  mirna: '#F5A623',
+  methylation: '#2BB5A0',
+};
+
+export const MODALITY_LABELS = {
+  rna: 'RNA-seq',
+  mirna: 'miRNA',
+  methylation: 'Methylation',
+};
+
+export const SUBTYPES: PAM50Subtype[] = ['LumA', 'LumB', 'Her2', 'Basal', 'Normal'];

@@ -1,0 +1,501 @@
+{
+  "fused_oof": {
+    "accuracy": 0.4334,
+    "macro_f1": 0.3125,
+    "weighted_f1": 0.4655,
+    "n": 646,
+    "source": "recomputed from oof_predictions.parquet across 5 stratified folds"
+  },
+  "cross_validation": {
+    "n_folds": 5,
+    "accuracy_mean": 0.4338,
+    "accuracy_std": 0.257,
+    "macro_f1_mean": 0.2535,
+    "macro_f1_std": 0.1829,
+    "weighted_f1_mean": 0.3631,
+    "weighted_f1_std": 0.2646,
+    "per_fold": {
+      "fold_1": {
+        "accuracy": 0.16923076923076924,
+        "macro_f1": 0.05789473684210526,
+        "weighted_f1": 0.048987854251012146,
+        "n_val": 130,
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            0,
+            69,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            25,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            8,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            22,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            6,
+            0
+          ]
+        ]
+      },
+      "fold_2": {
+        "accuracy": 0.09302325581395349,
+        "macro_f1": 0.06445623342175066,
+        "weighted_f1": 0.04796126087224724,
+        "n_val": 129,
+        "confusion_matrix": [
+          [
+            0,
+            20,
+            49,
+            0,
+            0
+          ],
+          [
+            0,
+            6,
+            20,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            6,
+            0,
+            0
+          ],
+          [
+            0,
+            5,
+            16,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            6,
+            0,
+            0
+          ]
+        ]
+      },
+      "fold_3": {
+        "accuracy": 0.7364341085271318,
+        "macro_f1": 0.5106348234333538,
+        "weighted_f1": 0.6533527646047049,
+        "n_val": 129,
+        "confusion_matrix": [
+          [
+            65,
+            0,
+            0,
+            3,
+            0
+          ],
+          [
+            4,
+            0,
+            0,
+            22,
+            0
+          ],
+          [
+            0,
+            0,
+            8,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            22,
+            0
+          ],
+          [
+            5,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "fold_4": {
+        "accuracy": 0.6434108527131783,
+        "macro_f1": 0.414621095750128,
+        "weighted_f1": 0.6041363515482046,
+        "n_val": 129,
+        "confusion_matrix": [
+          [
+            59,
+            4,
+            0,
+            4,
+            1
+          ],
+          [
+            5,
+            18,
+            0,
+            2,
+            0
+          ],
+          [
+            4,
+            1,
+            0,
+            3,
+            0
+          ],
+          [
+            4,
+            14,
+            0,
+            4,
+            0
+          ],
+          [
+            4,
+            0,
+            0,
+            0,
+            2
+          ]
+        ]
+      },
+      "fold_5": {
+        "accuracy": 0.5271317829457365,
+        "macro_f1": 0.21980773530069303,
+        "weighted_f1": 0.4612134477840341,
+        "n_val": 129,
+        "confusion_matrix": [
+          [
+            60,
+            0,
+            8,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            19,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            8,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            20,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "per_class": {
+    "LumA": {
+      "precision": 0.8214,
+      "recall": 0.538,
+      "f1": 0.6502,
+      "support": 342
+    },
+    "LumB": {
+      "precision": 0.3478,
+      "recall": 0.189,
+      "f1": 0.2449,
+      "support": 127
+    },
+    "Her2": {
+      "precision": 0.1375,
+      "recall": 0.5641,
+      "f1": 0.2211,
+      "support": 39
+    },
+    "Basal": {
+      "precision": 0.2526,
+      "recall": 0.4404,
+      "f1": 0.3211,
+      "support": 109
+    },
+    "Normal": {
+      "precision": 0.6667,
+      "recall": 0.069,
+      "f1": 0.125,
+      "support": 29
+    }
+  },
+  "confusion_matrix_oof": {
+    "labels": [
+      "LumA",
+      "LumB",
+      "Her2",
+      "Basal",
+      "Normal"
+    ],
+    "matrix": [
+      [
+        184,
+        24,
+        57,
+        76,
+        1
+      ],
+      [
+        15,
+        24,
+        39,
+        49,
+        0
+      ],
+      [
+        4,
+        2,
+        22,
+        11,
+        0
+      ],
+      [
+        6,
+        19,
+        36,
+        48,
+        0
+      ],
+      [
+        15,
+        0,
+        6,
+        6,
+        2
+      ]
+    ]
+  },
+  "calibration": {
+    "ece": 0.1045,
+    "bins": [
+      {
+        "bin": 0,
+        "range": [
+          0.0,
+          0.1
+        ],
+        "count": 0,
+        "accuracy": 0.0,
+        "confidence": 0.05
+      },
+      {
+        "bin": 1,
+        "range": [
+          0.1,
+          0.2
+        ],
+        "count": 0,
+        "accuracy": 0.0,
+        "confidence": 0.15
+      },
+      {
+        "bin": 2,
+        "range": [
+          0.2,
+          0.3
+        ],
+        "count": 349,
+        "accuracy": 0.2378,
+        "confidence": 0.2392
+      },
+      {
+        "bin": 3,
+        "range": [
+          0.3,
+          0.4
+        ],
+        "count": 159,
+        "accuracy": 0.5849,
+        "confidence": 0.3299
+      },
+      {
+        "bin": 4,
+        "range": [
+          0.4,
+          0.5
+        ],
+        "count": 61,
+        "accuracy": 0.5738,
+        "confidence": 0.4567
+      },
+      {
+        "bin": 5,
+        "range": [
+          0.5,
+          0.6
+        ],
+        "count": 20,
+        "accuracy": 0.7,
+        "confidence": 0.5591
+      },
+      {
+        "bin": 6,
+        "range": [
+          0.6,
+          0.7
+        ],
+        "count": 43,
+        "accuracy": 0.9535,
+        "confidence": 0.6632
+      },
+      {
+        "bin": 7,
+        "range": [
+          0.7,
+          0.8
+        ],
+        "count": 14,
+        "accuracy": 1.0,
+        "confidence": 0.7094
+      },
+      {
+        "bin": 8,
+        "range": [
+          0.8,
+          0.9
+        ],
+        "count": 0,
+        "accuracy": 0.0,
+        "confidence": 0.85
+      },
+      {
+        "bin": 9,
+        "range": [
+          0.9,
+          1.0
+        ],
+        "count": 0,
+        "accuracy": 0.0,
+        "confidence": 0.95
+      }
+    ]
+  },
+  "single_omics_ablation": {
+    "rna": {
+      "accuracy_mean": 0.8144,
+      "accuracy_std": 0.0836,
+      "macro_f1_mean": 0.8104,
+      "macro_f1_std": 0.0765
+    },
+    "mirna": {
+      "accuracy_mean": 0.7492,
+      "accuracy_std": 0.0405,
+      "macro_f1_mean": 0.7242,
+      "macro_f1_std": 0.0361
+    },
+    "meth": {
+      "accuracy_mean": 0.723,
+      "accuracy_std": 0.0318,
+      "macro_f1_mean": 0.728,
+      "macro_f1_std": 0.0365
+    }
+  },
+  "cohort": {
+    "n_patients": 646,
+    "subtype_distribution": {
+      "LumA": 342,
+      "LumB": 127,
+      "Basal": 109,
+      "Her2": 39,
+      "Normal": 29
+    },
+    "funnel": {
+      "total_pancan_atlas": 1084,
+      "stages": [
+        {
+          "stage": 1,
+          "name": "All 3 Omics Layers Available",
+          "count": 1035,
+          "description": "Patients with RNA-seq, miRNA, and DNA methylation profiling available from TCGA-BRCA."
+        },
+        {
+          "stage": 2,
+          "name": "HM450 Methylation Platform",
+          "count": 733,
+          "description": "Dominant array platform retained (486k probes). 302 HM27-platform cases dropped to prevent probe set mismatch."
+        },
+        {
+          "stage": 3,
+          "name": "Locked Training Cohort with PAM50",
+          "count": 646,
+          "description": "Patients with validated PAM50 subtype labels aligned across all 3 omics layers."
+        }
+      ],
+      "subtype_distribution": {
+        "LumA": 342,
+        "LumB": 127,
+        "Basal": 109,
+        "Her2": 39,
+        "Normal": 29
+      },
+      "stage_distribution": {
+        "Stage STAGE IIA": 207,
+        "Stage STAGE IIB": 150,
+        "Stage STAGE IIIA": 103,
+        "Stage STAGE I": 53,
+        "Stage STAGE IA": 51,
+        "Stage STAGE IIIC": 40,
+        "Stage STAGE IIIB": 17,
+        "Stage STAGE IV": 8,
+        "Stage STAGE X": 5,
+        "Stage STAGE II": 5,
+        "Stage STAGE IB": 3,
+        "Stage STAGE III": 2,
+        "Unknown": 2
+      }
+    }
+  },
+  "benchmark_comparison": {
+    "documented_accuracy": 0.8699,
+    "documented_macro_f1": 0.8458,
+    "recomputed_oof_accuracy": 0.4334,
+    "recomputed_oof_macro_f1": 0.3125,
+    "difference_accuracy": -0.4365,
+    "difference_macro_f1": -0.5333
+  }
+}

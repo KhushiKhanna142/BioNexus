@@ -11,4 +11,9 @@ export const api = {
   predict: (id) => get(`/predict/${id}`),
   explain: (id, layer = 'rna', topK = 10) => get(`/explain/${id}?layer=${layer}&top_k=${topK}`),
   metrics: () => get('/metrics'),
+  graphSummary: () => get('/graphs/summary'),
+  patientEgoGraph: (layer, patientId, hops = 1) => get(`/graphs/${layer}/patient/${patientId}?hops=${hops}`),
+  patientGraphCompare: (patientId) => get(`/graphs/patient/${patientId}/compare`),
+  graphOverview: (layer, maxNodes = 250) => get(`/graphs/${layer}/overview?max_nodes=${maxNodes}`),
+  profile: (patientId, layer = 'rna', topN = 30) => get(`/profile/${patientId}?layer=${layer}&top_n=${topN}`),
 }

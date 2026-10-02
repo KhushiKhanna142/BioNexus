@@ -1,0 +1,14 @@
+{
+  "precomputed": true,
+  "source": "results/attribution_statistical_validation.csv",
+  "n_patients": 50,
+  "patients_top_k_beats_random": 41,
+  "pct_top_k_beats_random": 0.82,
+  "median_top_k_impact": 0.0045,
+  "median_random_impact": 0.001,
+  "mean_top_k_impact": 0.0246,
+  "mean_random_impact": 0.0043,
+  "fold_difference_median": 4.5,
+  "wilcoxon_p_value": 0.0007,
+  "wording": "attribution-flagged genes changed the model's logit more than random genes in 41/50 tested patients (Wilcoxon p < 0.001)"
+}

@@ -1,0 +1,11 @@
+{
+  "run_id": "4fa14695aded458faa6b65cf77411707",
+  "model_artifact_path": "model",
+  "model_uri": "runs:/4fa14695aded458faa6b65cf77411707/model",
+  "tracking_uri": "sqlite:///C:\\anushka\\bio_nexus\\mlflow.db",
+  "experiment_name": "bionexus-cancer-subtype",
+  "metrics": {
+    "accuracy_mean": 0.4338461538461539,
+    "macro_f1_mean": 0.2534829249496061
+  }
+}

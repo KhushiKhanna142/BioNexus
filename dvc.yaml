@@ -1,4 +1,4 @@
-# DVC pipeline — mirrors the 5-stage BioNexus architecture.
+# DVC pipeline — mirrors the BioNexus GraphGPS architecture.
 # Run `dvc repro` to execute only the stages whose inputs actually changed.
 stages:
   ingest:
@@ -6,26 +6,42 @@ stages:
     deps:
       - src/bio_nexus/data/ingestion.py
     outs:
-      - data/processed/aligned_omics.parquet
+      - data/processed/final/labels_final.csv
 
   build_graph:
-    cmd: python -m bio_nexus.graph.construction --config configs/data/default.yaml
+    cmd: python -m bio_nexus.graph.construction
     deps:
       - src/bio_nexus/graph/construction.py
-      - data/processed/aligned_omics.parquet
+      - data/processed/final/labels_final.csv
     outs:
-      - data/processed/gene_graph.gpickle
+      - data/processed/graphs/rna_graph.pt
+      - data/processed/graphs/mirna_graph.pt
+      - data/processed/graphs/meth_graph.pt
+      - data/processed/graphs/graph_node_order.csv
 
   train:
     cmd: python -m bio_nexus.train --config configs/training/default.yaml
     deps:
       - src/bio_nexus/train.py
-      - data/processed/gene_graph.gpickle
+      - data/processed/graphs/rna_graph.pt
+      - data/processed/graphs/mirna_graph.pt
+      - data/processed/graphs/meth_graph.pt
     outs:
-      - models/bionexus_latest.pt
+      - data/processed/checkpoints/best_model.pt
     metrics:
-      - metrics/eval_metrics.json:
+      - data/processed/results/metrics.json:
           cache: false
+
+  export_serving:
+    cmd: python scripts/export_artifacts.py
+    deps:
+      - scripts/export_artifacts.py
+      - data/processed/checkpoints/best_model.pt
+    outs:
+      - data/serving/patients.csv
+      - data/serving/oof_predictions.parquet
+      - data/serving/labels.json
+      - data/serving/model_card.json
 
   register_model:
     cmd: python -m bio_nexus.registry.register_model

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import PatientGraphExplorer from './PatientGraphExplorer'
 
 const SUBTYPE_ORDER = ['LumA', 'LumB', 'Her2', 'Basal', 'Normal']
 const LAYER_COLORS = { rna: '#3FBFAE', mirna: '#D97D66', meth: '#7B8FA6' }
 
-export default function PredictionPanel({ patientId }) {
+export default function PredictionPanel({ patientId, onSelectPatient }) {
   const [prediction, setPrediction] = useState(null)
   const [genes, setGenes] = useState(null)
   const [layer, setLayer] = useState('rna')
@@ -74,6 +75,9 @@ export default function PredictionPanel({ patientId }) {
           </div>
         ))}
       </div>
+
+      {/* Embedded Real Patient Similarity Graph Explorer */}
+      <PatientGraphExplorer patientId={patientId} onSelectPatient={onSelectPatient} />
 
       <div className="card">
         <div className="card-title">Top driving genes</div>

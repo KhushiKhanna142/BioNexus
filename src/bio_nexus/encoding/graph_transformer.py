@@ -97,6 +97,8 @@ class GraphGPSEncoder(nn.Module):
         h = F.relu(h)
         h = self.dropout(h)
 
+        if edge_weight is None:
+            edge_weight = torch.ones(edge_index.size(1), device=x.device, dtype=x.dtype)
         edge_attr = edge_weight.unsqueeze(-1)  # [num_edges] -> [num_edges, 1] for GINEConv
 
         for gps_layer in self.gps_layers:

@@ -1,0 +1,21 @@
+{
+  "source": "oof_predictions.parquet pooling weights vs true_pam50",
+  "overall_mean_weights": {
+    "rna": 0.2672,
+    "mirna": 0.3894,
+    "meth": 0.3434
+  },
+  "correct_predictions_mean_weights": {
+    "rna": 0.2515,
+    "mirna": 0.3752,
+    "meth": 0.3733
+  },
+  "incorrect_predictions_mean_weights": {
+    "rna": 0.2792,
+    "mirna": 0.4002,
+    "meth": 0.3206
+  },
+  "mean_rna_weight_correct": 0.2515,
+  "mean_rna_weight_incorrect": 0.2792,
+  "observation": "Mean RNA fusion pooling weight was 0.28 on incorrect OOF predictions vs 0.25 on correct ones."
+}

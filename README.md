@@ -1,6 +1,6 @@
 # BioNexus – Multi-Omics Graph Transformer for Cancer Subtype Classification
 
-BioNexus is a production-grade deep learning and MLOps platform for multi-omics cancer subtype classification (PAM50 breast cancer cohort). It integrates gene expression (RNA-seq), DNA methylation, and microRNA (miRNA) expression into a unified biological graph and leverages Graph Transformer architectures with cross-attention fusion for multimodal representation learning and interpretable subtype prediction.
+BioNexus is a production-grade deep learning and MLOps platform for multi-omics cancer subtype classification (PAM50 breast cancer cohort). It constructs patient-similarity kNN graphs across gene expression (RNA-seq), DNA methylation, and microRNA (miRNA) and leverages GraphGPS encoders (GINE local message passing + global self-attention) with cross-attention fusion for multimodal representation learning and interpretable subtype prediction.
 
 ---
 
@@ -42,20 +42,17 @@ BioNexus/
 │   ├── finalize_labels.py          Step 4 — Subtype label filtering & platform bias check
 │   └── final_cohort.py             Step 5 — Locked-in 646 patient multi-omics cohort generation
 │
-├── frontend/                       Vite + React Interactive Web Application
+├── frontend-new/                   Vite + React Interactive Web Application
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── PredictionPanel.jsx Patient Explorer UI & Gene Attribution visualizer
-│   │   │   ├── MetricsDashboard.jsx Model Performance & Confusion Matrix Heatmap
-│   │   │   └── Sidebar.jsx        Navigation & Cohort stats
-│   │   ├── api.js                 API fetch service
-│   │   └── App.jsx                Main App component
+│   │   ├── pages/                  Dashboard, Patient Analysis, Cohort, Graph Explorer, Settings
+│   │   ├── components/             Reusable UI & Layout components
+│   │   └── api/                    Typed API client
 │   └── package.json
 │
 ├── src/bio_nexus/                  Modular Python Package
 │   ├── data/                       Stage 1 — Ingestion & preprocessing
-│   ├── graph/                      Stage 2 — Gene-interaction graph construction
-│   ├── encoding/                   Stage 3 — Graph Transformer encoding
+│   ├── graph/                      Stage 2 — Patient-similarity kNN graph construction
+│   ├── encoding/                   Stage 3 — GraphGPS (GINE + global attention) encoding
 │   ├── fusion/                     Stage 4 — Multi-omics cross-attention fusion
 │   ├── models/                     Stage 5a — Subtype classifier head
 │   ├── interpretability/           Stage 5b — Integrated Gradients & statistical validation
@@ -138,7 +135,7 @@ uvicorn bio_nexus.serving.api:app --reload --port 8000
 
 ### 2. Start React Dashboard Frontend
 ```bash
-cd frontend
+cd frontend-new
 npm install
 npm run dev
 ```

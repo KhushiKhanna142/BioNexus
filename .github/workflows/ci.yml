@@ -37,8 +37,8 @@ jobs:
         run: pip install uv
       - name: Install deps
         run: uv pip install --system ".[dev]"
-      - name: Run unit tests
-        run: pytest tests/unit -v
+      - name: Run unit and API tests
+        run: pytest tests/unit tests/api -v
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
@@ -53,14 +53,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install uv
-        run: pip install uv
-      - name: Install deps
-        run: uv pip install --system .
-      - name: Run end-to-end smoke test (CPU, tiny config)
-        run: |
-          export PYTHONPATH=src
-          python -m bio_nexus.train --config configs/training/smoke_test.yaml || echo "Smoke test wired but pipeline stages pending ML implementation"
+        - name: Install uv
+          run: pip install uv
+        - name: Install deps
+          run: uv pip install --system .
+        - name: Run end-to-end smoke test (CPU, tiny config)
+          run: |
+            export PYTHONPATH=src
+            python -m bio_nexus.train --config configs/training/smoke_test.yaml || echo "Smoke test wired but pipeline stages pending ML implementation"
 
   docker-build:
     runs-on: ubuntu-latest
@@ -68,4 +68,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build production image
-        run: docker build -f docker/Dockerfile -t mosaic:ci-test .
+        run: docker build -f docker/Dockerfile -t bionexus:ci-test .

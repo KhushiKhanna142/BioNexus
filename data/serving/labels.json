@@ -1,0 +1,14 @@
+{
+  "label_order": [
+    "LumA",
+    "LumB",
+    "Her2",
+    "Basal",
+    "Normal"
+  ],
+  "fusion_order": [
+    "rna",
+    "mirna",
+    "meth"
+  ]
+}
