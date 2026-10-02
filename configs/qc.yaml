@@ -1,0 +1,27 @@
+# BioNexus Quality Control & Scale Detection Configuration
+qc:
+  coverage_reject_threshold: 0.50   # Below 50% coverage -> FAILED (cannot run)
+  coverage_warn_threshold: 0.80     # 50% to 80% coverage -> WARNING (proceed with caution)
+  
+  scale_detection:
+    rna:
+      raw_count_max: 30.0           # Max > 30.0 indicates un-logged TPM / raw counts
+      raw_count_mean: 50.0          # Mean > 50.0 strongly indicates raw counts
+      expected_scale: "log2_tpm"
+    mirna:
+      raw_count_max: 35.0           # Max > 35.0 indicates raw counts
+      expected_scale: "log2_rpm"
+    meth:
+      min_beta: -0.05               # Beta values should be between 0.0 and 1.0
+      max_beta: 1.05
+      expected_scale: "beta_values"
+
+  auto_normalize:
+    enabled: true
+    method: "log2_p1"               # log2(x + 1)
+    record_in_report: true
+
+  confidence_tiers:
+    auto_report_min: 0.80           # >= 80% confidence -> Auto-report lane
+    clinician_review_min: 0.60      # 60% to 80% confidence -> Clinician review lane
+    # Below 60% or missing assays -> Needs more data lane

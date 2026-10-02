@@ -2,7 +2,10 @@ import type {
   Patient, PredictionResult, ExplanationResult, ModelMetrics,
   CohortStats, PatientGraph, OmicsProfile, PAM50Subtype, CausalValidation,
   GraphSummaryResponse, PatientEgoGraphResponse, PatientGraphCompareResponse, GraphOverviewResponse,
+  CostAccuracyResponse, CaseQCReportResponse, BatchResponse,
 } from '@/lib/types';
+
+
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
@@ -270,5 +273,121 @@ export const api = {
   async getModelInfo(): Promise<Record<string, unknown>> {
     return fetchAPI('/api/model-info');
   },
+
+  async getCostAccuracy(
+    budget?: number,
+    threshold?: number,
+    metric: 'macro_f1' | 'accuracy' = 'macro_f1',
+    signal?: AbortSignal,
+  ): Promise<CostAccuracyResponse> {
+    const params = new URLSearchParams();
+    if (budget !== undefined) params.append('budget', String(budget));
+    if (threshold !== undefined) params.append('threshold', String(threshold));
+    if (metric) params.append('metric', metric);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return fetchAPI<CostAccuracyResponse>(`/api/simulate/cost-accuracy${qs}`, undefined, signal);
+  },
+
+  async runQC(formData: FormData, signal?: AbortSignal): Promise<CaseQCReportResponse> {
+    const url = `${BASE_URL}/v1/qc`;
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      signal,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new ApiError(res.status, res.statusText, body);
+    }
+    return res.json();
+  },
+
+  async predictLive(formData: FormData, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    const url = `${BASE_URL}/v1/predict-live`;
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      signal,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new ApiError(res.status, res.statusText, body);
+    }
+    return res.json();
+  },
+
+  async getDemoCase(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return fetchAPI('/v1/qc/demo-case', undefined, signal);
+  },
+
+  getTemplateUrl(modality: string): string {
+    return `${BASE_URL}/v1/qc/templates/${modality}`;
+  },
+
+  getReportPdfUrl(caseId: string): string {
+    return `${BASE_URL}/v1/cases/${caseId}/report.pdf`;
+  },
+
+  async createBatch(formData?: FormData, useDemo = false, signal?: AbortSignal): Promise<BatchResponse> {
+    const url = `${BASE_URL}/v1/batches`;
+    let bodyData: BodyInit;
+    if (formData) {
+      bodyData = formData;
+    } else {
+      const fd = new FormData();
+      if (useDemo) fd.append('use_demo', 'true');
+      bodyData = fd;
+    }
+    const res = await fetch(url, {
+      method: 'POST',
+      body: bodyData,
+      signal,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new ApiError(res.status, res.statusText, body);
+    }
+    return res.json();
+  },
+
+  async getBatch(batchId: string, signal?: AbortSignal): Promise<BatchResponse> {
+    return fetchAPI(`/v1/batches/${batchId}`, undefined, signal);
+  },
+
+  getBatchResultsUrl(batchId: string): string {
+    return `${BASE_URL}/v1/batches/${batchId}/results.csv`;
+  },
+
+  async getCase(caseId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return fetchAPI(`/v1/cases/${caseId}`, undefined, signal);
+  },
+
+  async getReportPdfBlob(caseId: string, signal?: AbortSignal): Promise<Blob> {
+    const url = `${BASE_URL}/v1/cases/${caseId}/report.pdf`;
+    const res = await fetch(url, {
+      method: 'GET',
+      signal,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+        'X-API-Key': 'dev-admin-key',
+      },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new ApiError(res.status, res.statusText, body);
+    }
+    return res.blob();
+  },
 };
+
+
 

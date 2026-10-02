@@ -1,0 +1,42 @@
+{
+  "case_id": "case_1ead91f0201c",
+  "patient_ref": "MULTIPART-PT-001",
+  "specimen_type": "fresh_frozen",
+  "status": "intake_qc_passed",
+  "created_at": "2026-10-02T19:48:30.342529+00:00",
+  "updated_at": "2026-10-02T19:48:30.342529+00:00",
+  "modalities_available": [
+    "rna"
+  ],
+  "input_file_hashes": {
+    "rna_profile.csv": "c25bfd1658ad22568f490db4066652fc6225dd39c47a67e93e5100595f7552c2"
+  },
+  "qc_summary": {
+    "overall_status": "WARNING",
+    "modalities_checked": [
+      "rna"
+    ],
+    "summary_message": "Case QC passed with warnings: some features or scales are sub-optimal.",
+    "results": {
+      "rna": {
+        "status": "WARNING",
+        "total_expected": 5000,
+        "mapped_count": 3000,
+        "coverage_pct": 0.6,
+        "missing_pct": 0.4,
+        "value_min": 2.5,
+        "value_max": 2.5,
+        "value_mean": 2.5,
+        "likely_raw_counts": false,
+        "warnings": [
+          "Feature coverage (60.0%) is sub-optimal (recommended: >=80%). 2000 features missing."
+        ],
+        "errors": []
+      }
+    }
+  },
+  "prediction": null,
+  "audit_notes": [
+    "Case created and QC validated"
+  ]
+}

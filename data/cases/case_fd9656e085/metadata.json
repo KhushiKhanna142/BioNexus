@@ -1,0 +1,25 @@
+{
+  "case_id": "case_fd9656e085",
+  "patient_ref": "PT-SYNTH-074",
+  "specimen_type": "primary_tumor",
+  "status": "predicted",
+  "created_at": "2026-10-02T22:15:34.562497+00:00",
+  "updated_at": "2026-10-02T22:15:48.315955+00:00",
+  "modalities_available": [
+    "rna"
+  ],
+  "input_file_hashes": {},
+  "qc_summary": {
+    "overall_status": "PASSED"
+  },
+  "prediction": {
+    "predicted_subtype": "Basal",
+    "confidence": 0.504,
+    "confidence_tier": "medium",
+    "abstain": false
+  },
+  "audit_notes": [
+    "Case created and QC validated",
+    "Prediction completed"
+  ]
+}

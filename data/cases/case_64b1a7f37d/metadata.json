@@ -1,0 +1,25 @@
+{
+  "case_id": "case_64b1a7f37d",
+  "patient_ref": "DEMO-TCGA-A2-A04R",
+  "specimen_type": "primary_tumor",
+  "status": "predicted",
+  "created_at": "2026-10-02T21:59:08.456155+00:00",
+  "updated_at": "2026-10-02T21:59:08.923714+00:00",
+  "modalities_available": [
+    "rna"
+  ],
+  "input_file_hashes": {},
+  "qc_summary": {
+    "overall_status": "WARNING"
+  },
+  "prediction": {
+    "predicted_subtype": "LumB",
+    "confidence": 0.27650994062423706,
+    "confidence_tier": "low",
+    "abstain": true
+  },
+  "audit_notes": [
+    "Case created and QC validated",
+    "Prediction completed"
+  ]
+}

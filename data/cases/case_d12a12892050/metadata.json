@@ -1,0 +1,43 @@
+{
+  "case_id": "case_d12a12892050",
+  "patient_ref": "RAW-SCALE-CASE",
+  "specimen_type": "primary_tumor",
+  "status": "intake_qc_passed",
+  "created_at": "2026-10-02T19:45:52.382724+00:00",
+  "updated_at": "2026-10-02T19:45:52.382724+00:00",
+  "modalities_available": [
+    "rna"
+  ],
+  "input_file_hashes": {
+    "rna.json": "4cfd005777dd261b021ee4e2bad8c0443819b1fb17547218f26fd507e99d8012"
+  },
+  "qc_summary": {
+    "overall_status": "WARNING",
+    "modalities_checked": [
+      "rna"
+    ],
+    "summary_message": "Case QC passed with warnings: some features or scales are sub-optimal.",
+    "results": {
+      "rna": {
+        "status": "WARNING",
+        "total_expected": 5000,
+        "mapped_count": 3000,
+        "coverage_pct": 0.6,
+        "missing_pct": 0.4,
+        "value_min": 5000.0,
+        "value_max": 5000.0,
+        "value_mean": 5000.0,
+        "likely_raw_counts": true,
+        "warnings": [
+          "Likely raw count scale detected (max=5000.0, mean=5000.0). BioNexus expects log2(TPM + 1) normalized values.",
+          "Feature coverage (60.0%) is sub-optimal (recommended: >=80%). 2000 features missing."
+        ],
+        "errors": []
+      }
+    }
+  },
+  "prediction": null,
+  "audit_notes": [
+    "Case created and QC validated"
+  ]
+}

@@ -1,0 +1,212 @@
+{
+  "case_id": "live_ca05346a7e",
+  "patient_ref": "LIVE-a06897",
+  "specimen_type": "primary_tumor",
+  "status": "predicted",
+  "created_at": "2026-10-02T21:55:42.640972+00:00",
+  "updated_at": "2026-10-02T21:55:42.937607+00:00",
+  "modalities_available": [
+    "rna"
+  ],
+  "input_file_hashes": {},
+  "qc_summary": {
+    "overall_status": "WARNING",
+    "modalities_checked": [
+      "rna"
+    ],
+    "summary_message": "Ready to run with 1 of 3 data types (warnings detected).",
+    "auto_normalized_modalities": [],
+    "results": {
+      "rna": {
+        "status": "WARNING",
+        "coverage_pct": 0.6,
+        "detected_scale": "log2",
+        "likely_raw_counts": false,
+        "warnings": [
+          "Feature coverage (60.0%) is sub-optimal (recommended: >=80%). 2000 features missing."
+        ],
+        "errors": [],
+        "fix_hints": [
+          "Submitting with partial coverage may degrade prediction certainty. Escalation may be needed."
+        ]
+      }
+    }
+  },
+  "prediction": {
+    "predicted_subtype": "Basal",
+    "confidence": 0.4994,
+    "calibrated_probabilities": {
+      "LumA": 0.0967,
+      "LumB": 0.3078,
+      "Her2": 0.0695,
+      "Basal": 0.4994,
+      "Normal": 0.0266
+    },
+    "confidence_tier": "low",
+    "abstain": false,
+    "abstain_reason": null,
+    "modalities_used": [
+      "rna"
+    ],
+    "modality_weights": {
+      "rna": 0.43186846375465393,
+      "mirna": 0.34754693508148193,
+      "meth": 0.22058461606502533
+    },
+    "top_attributed_genes": {
+      "rna": [
+        {
+          "gene": "ESR1",
+          "feature_id": "ENSG00000000001",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "PGR",
+          "feature_id": "ENSG00000000002",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "ERBB2",
+          "feature_id": "ENSG00000000003",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "MKI67",
+          "feature_id": "ENSG00000000004",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "GATA3",
+          "feature_id": "ENSG00000000005",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "FOXA1",
+          "feature_id": "ENSG00000000006",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "EGFR",
+          "feature_id": "ENSG00000000007",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "KRT5",
+          "feature_id": "ENSG00000000008",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "KRT14",
+          "feature_id": "ENSG00000000009",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "KRT17",
+          "feature_id": "ENSG00000000010",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "TP53",
+          "feature_id": "ENSG00000000011",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "PIK3CA",
+          "feature_id": "ENSG00000000012",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "PTEN",
+          "feature_id": "ENSG00000000013",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "CDH1",
+          "feature_id": "ENSG00000000014",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        },
+        {
+          "gene": "MAP3K1",
+          "feature_id": "ENSG00000000015",
+          "attribution": 0.978,
+          "importance": 0.978,
+          "direction": "pushes toward predicted class",
+          "layer": "rna"
+        }
+      ]
+    },
+    "next_test_recommendations": [
+      {
+        "assay": "microRNA Sequencing (miRNA-seq)",
+        "expected_gain": 0.085,
+        "cost": 350.0,
+        "turnaround": "3-5 business days",
+        "gain_per_cost": 0.000243,
+        "rationale": "High discriminative power for Her2 vs LumB differentiation."
+      },
+      {
+        "assay": "DNA Methylation Array (HM450)",
+        "expected_gain": 0.065,
+        "cost": 450.0,
+        "turnaround": "7-10 business days",
+        "gain_per_cost": 0.000144,
+        "rationale": "Provides epigenetic stability check on LumA vs Normal boundary."
+      }
+    ],
+    "model_version": "1.0.0",
+    "preprocessing_version": "1.0.0",
+    "timings_ms": {
+      "knn_projection_ms": 21.89,
+      "inference_ms": 219.62,
+      "attribution_ms": 3.09,
+      "recommendation_ms": 0.06,
+      "total_ms": 244.72
+    }
+  },
+  "audit_notes": [
+    "Case created and QC validated",
+    "Prediction completed"
+  ]
+}

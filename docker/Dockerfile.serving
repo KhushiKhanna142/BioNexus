@@ -5,7 +5,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /build
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml .
-RUN uv pip install --system --no-cache fastapi uvicorn mlflow prometheus-client boto3 pydantic pandas pyarrow
+RUN uv pip install --system --no-cache fastapi uvicorn mlflow prometheus-client boto3 pydantic pydantic-settings pandas pyarrow reportlab torch torch-geometric
 
 FROM python:3.11-slim AS runtime
 
@@ -15,10 +15,7 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-COPY src/bio_nexus/serving/ ./src/bio_nexus/serving/
-COPY src/bio_nexus/registry/ ./src/bio_nexus/registry/
-COPY src/bio_nexus/utils/ ./src/bio_nexus/utils/
-COPY src/bio_nexus/__init__.py ./src/bio_nexus/__init__.py
+COPY src/bio_nexus/ ./src/bio_nexus/
 ENV PYTHONPATH=/app/src
 
 USER bionexus

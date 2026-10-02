@@ -59,6 +59,169 @@ export interface BiomarkerEntry {
   layer?: string;
 }
 
+// ============== Cost vs Accuracy Simulation Types ==============
+
+export interface PolicyPoint {
+  threshold: number;
+  avg_cost: number;
+  macro_f1: number;
+  macro_f1_ci_lower: number;
+  macro_f1_ci_upper: number;
+  accuracy: number;
+  accuracy_ci_lower: number;
+  accuracy_ci_upper: number;
+  escalation_rate?: number;
+  policy_type?: string;
+  pct_of_full_f1?: number;
+  pct_of_full_accuracy?: number;
+  cost_savings_pct?: number;
+}
+
+export interface BaselineCurve {
+  name: string;
+  cost: number;
+  macro_f1: number;
+  macro_f1_ci?: [number, number];
+  accuracy: number;
+  accuracy_ci?: [number, number];
+  description?: string;
+}
+
+export interface AssayCostItem {
+  assay: string;
+  full_name: string;
+  unit_cost: number;
+  is_placeholder: boolean;
+  badge: string;
+  turnaround: string;
+  features_count: number;
+  standalone_f1: number;
+  role: string;
+}
+
+export interface ModalityCombinationItem {
+  id: string;
+  name: string;
+  modalities: string[];
+  cost: number;
+  macro_f1: number;
+  macro_f1_std: number;
+  macro_f1_ci_lower?: number;
+  macro_f1_ci_upper?: number;
+  accuracy: number;
+  accuracy_std: number;
+  accuracy_ci_lower?: number;
+  accuracy_ci_upper?: number;
+  num_features?: number;
+}
+
+export interface CostAccuracyResponse {
+  status: string;
+  empty: boolean;
+  message?: string;
+  headline: string;
+  caveat: string;
+  is_placeholder: boolean;
+  placeholder_badge: string;
+  readout: string;
+  nearest_point: PolicyPoint | null;
+  policy_points: PolicyPoint[];
+  baselines: {
+    always_all?: BaselineCurve;
+    never_add?: BaselineCurve;
+  };
+  gain_table: {
+    is_placeholder?: boolean;
+    placeholder_badge?: string;
+    caveat?: string;
+    headline?: string;
+    assays?: AssayCostItem[];
+  };
+  modality_combinations: ModalityCombinationItem[];
+  curve?: Array<{
+    assays: string[];
+    estimated_cost: number;
+    accuracy: number;
+    macro_f1: number;
+    mean_confidence?: number;
+  }>;
+}
+
+// ============== QC & Case Intake Types ==============
+
+export interface QCModalityItem {
+  modality: string;
+  status: 'PASSED' | 'WARNING' | 'FAILED';
+  total_expected: number;
+  mapped_count: number;
+  coverage_pct: number;
+  missing_pct: number;
+  value_min: number;
+  value_max: number;
+  value_mean: number;
+  detected_scale: string;
+  likely_raw_counts: boolean;
+  duplicate_ids_count: number;
+  duplicate_ids: string[];
+  warnings: string[];
+  errors: string[];
+  fix_hints: string[];
+  auto_normalized_applied: boolean;
+}
+
+export interface CaseQCReportResponse {
+  overall_status: 'PASSED' | 'WARNING' | 'FAILED';
+  modalities_checked: string[];
+  can_proceed: boolean;
+  requires_caution: boolean;
+  ready_modalities_count: number;
+  summary_message: string;
+  auto_normalized_modalities: string[];
+  results: Record<string, QCModalityItem>;
+}
+
+// ============== Batch Triage Types ==============
+
+export interface BatchCardItem {
+  case_id: string;
+  patient_ref: string;
+  predicted_subtype: string;
+  confidence: number;
+  confidence_tier: string;
+  triage_lane: 'auto_report' | 'clinician_review' | 'needs_more_data';
+  data_types_used: string[];
+  estimated_cost: number;
+  status: string;
+  abstain?: boolean;
+  demo_data: boolean;
+}
+
+export interface BatchSummary {
+  total_cases: number;
+  auto_reported_count: number;
+  auto_reported_pct: number;
+  clinician_review_count: number;
+  clinician_review_pct: number;
+  needs_more_data_count: number;
+  needs_more_data_pct: number;
+  average_cost_per_case: number;
+}
+
+export interface BatchResponse {
+  batch_id: string;
+  status: string;
+  total_cases: number;
+  summary?: BatchSummary;
+  lanes?: {
+    auto_report: BatchCardItem[];
+    clinician_review: BatchCardItem[];
+    needs_more_data: BatchCardItem[];
+  };
+  results?: BatchCardItem[];
+}
+
+
+
 export interface ExplanationResult {
   patient_id: string;
   biomarkers: BiomarkerEntry[];

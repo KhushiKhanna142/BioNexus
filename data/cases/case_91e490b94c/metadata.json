@@ -1,0 +1,25 @@
+{
+  "case_id": "case_91e490b94c",
+  "patient_ref": "DEMO-TCGA-A1-A0SI",
+  "specimen_type": "primary_tumor",
+  "status": "predicted",
+  "created_at": "2026-10-02T22:12:36.982101+00:00",
+  "updated_at": "2026-10-02T22:12:37.262673+00:00",
+  "modalities_available": [
+    "rna"
+  ],
+  "input_file_hashes": {},
+  "qc_summary": {
+    "overall_status": "WARNING"
+  },
+  "prediction": {
+    "predicted_subtype": "Her2",
+    "confidence": 0.24037718772888184,
+    "confidence_tier": "low",
+    "abstain": true
+  },
+  "audit_notes": [
+    "Case created and QC validated",
+    "Prediction completed"
+  ]
+}

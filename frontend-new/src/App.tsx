@@ -11,6 +11,10 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { BiomarkersPage } from '@/pages/BiomarkersPage';
 import { PathwayAnalysisPage } from '@/pages/PathwayAnalysisPage';
 import { GraphExplorerPage } from '@/pages/GraphExplorerPage';
+import { CostAccuracyPage } from '@/pages/CostAccuracyPage';
+import { NewCasePage } from '@/pages/NewCasePage';
+import { LiveCasePage } from '@/pages/LiveCasePage';
+import { BatchTriagePage } from '@/pages/BatchTriagePage';
 import { HealthProvider } from '@/lib/health';
 
 const queryClient = new QueryClient({
@@ -35,10 +39,14 @@ function App() {
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/new-case" element={<NewCasePage />} />
+              <Route path="/live-case/:id" element={<LiveCasePage />} />
+              <Route path="/batch-triage" element={<BatchTriagePage />} />
               <Route path="/patient-analysis" element={<PatientAnalysisPage />} />
               <Route path="/graph-explorer" element={<GraphExplorerPage />} />
               <Route path="/data-explorer" element={<DataExplorerPage />} />
               <Route path="/model-insights" element={<ModelInsightsPage />} />
+              <Route path="/cost-accuracy" element={<CostAccuracyPage />} />
               <Route path="/cohort-analysis" element={<CohortAnalysisPage />} />
               <Route path="/research" element={<ResearchPage />} />
               <Route path="/settings" element={<SettingsPage />} />
@@ -51,5 +59,6 @@ function App() {
     </QueryClientProvider>
   );
 }
+
 
 export default App;
