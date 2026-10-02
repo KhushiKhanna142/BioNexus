@@ -480,6 +480,7 @@ export interface BlockchainVerification {
   is_anchored: boolean;
   is_unaltered: boolean;
   status: 'VERIFIED_AUTHENTIC' | 'TAMPER_DETECTED' | 'NOT_YET_ANCHORED' | 'REVOKED_BY_PATIENT';
+  is_live_chain?: boolean;
   anchored_fingerprint?: string;
   current_fingerprint?: string;
   timestamp?: number;

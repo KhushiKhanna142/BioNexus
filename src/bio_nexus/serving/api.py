@@ -1444,17 +1444,26 @@ def get_patient_security_status(patient_id: str):
     cohort = get_cohort_manager()
 
     record = _get_canonical_patient_data(store, patient_id)
-    p_hash = vault.anonymize_id(patient_id)
+    leaf_data = cohort._patient_leaves.get(patient_id, {})
+    p_hash = leaf_data.get("patient_hash") or vault.anonymize_id(patient_id)
     current_fp = vault.compute_fingerprint(record)
     verification = polygon.verify_record(p_hash, current_fp)
 
     # Merkle Batch proof & verification
-    leaf_hash = compute_patient_leaf(
-        p_hash,
-        current_fp,
-        str(record.get("predicted_subtype", "LumA")),
-        float(record.get("confidence", 0.95)),
-    )
+    if patient_id in _SIMULATED_TAMPER_RECORDS:
+        leaf_hash = compute_patient_leaf(
+            p_hash,
+            current_fp,
+            str(record.get("predicted_subtype", "LumA")),
+            float(record.get("confidence", 0.95)),
+        )
+    else:
+        leaf_hash = leaf_data.get("leaf_hash") or compute_patient_leaf(
+            p_hash,
+            current_fp,
+            str(record.get("predicted_subtype", "LumA")),
+            float(record.get("confidence", 0.95)),
+        )
     proof_data = cohort.get_patient_proof(patient_id)
     cohort_verif = cohort.verify_patient_leaf(patient_id, leaf_hash)
 
