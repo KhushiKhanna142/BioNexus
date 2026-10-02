@@ -365,7 +365,7 @@ export function DashboardPage() {
                   >
                     {patients.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.id} ({p.subtype || p.true_pam50})
+                        {p.id}
                       </option>
                     ))}
                   </select>

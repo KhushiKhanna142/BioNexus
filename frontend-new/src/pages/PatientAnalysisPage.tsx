@@ -252,17 +252,6 @@ export function PatientAnalysisPage() {
                         }`}
                       >
                         <span className="font-mono">{p.id}</span>
-                        {p.subtype && (
-                          <span
-                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                            style={{
-                              backgroundColor: `${SUBTYPE_COLORS[p.subtype]}15`,
-                              color: SUBTYPE_COLORS[p.subtype],
-                            }}
-                          >
-                            {p.subtype}
-                          </span>
-                        )}
                       </button>
                     ))}
                   </div>

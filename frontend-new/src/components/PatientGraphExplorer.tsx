@@ -389,15 +389,6 @@ export function PatientGraphExplorer({
                     className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between rounded-lg transition"
                   >
                     <span className="font-mono font-semibold text-slate-900">{p.id}</span>
-                    <span
-                      className="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                      style={{
-                        backgroundColor: (PALETTE[p.subtype || 'LumA'] || '#4F6FE8') + '20',
-                        color: PALETTE[p.subtype || 'LumA'] || '#4F6FE8',
-                      }}
-                    >
-                      {p.subtype || p.true_pam50}
-                    </span>
                   </button>
                 ))}
               </div>
