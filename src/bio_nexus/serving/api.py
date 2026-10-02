@@ -26,6 +26,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from bio_nexus.interpretability.attribution import integrated_gradients, top_attributed_features
 from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
+from bio_nexus.security import (
+    compute_patient_leaf,
+    get_cohort_manager,
+    get_patient_vault,
+    get_polygon_service,
+)
 from bio_nexus.serving.artifacts import (
     LAYER_FILE,
     ArtifactStore,
@@ -1361,6 +1367,249 @@ async def predict_new_patient(
         },
         nearest_neighbors=nearest_neighbors_report,
     )
+
+
+# =========================================================================
+# Polygon Blockchain Security & Patient Privacy Vault
+# =========================================================================
+
+_SIMULATED_TAMPER_RECORDS: dict[str, dict[str, Any]] = {}
+
+
+def _get_canonical_patient_data(store: ArtifactStore, patient_id: str) -> dict[str, Any]:
+    if patient_id in _SIMULATED_TAMPER_RECORDS:
+        return _SIMULATED_TAMPER_RECORDS[patient_id]
+
+    oof_pred = _compute_oof_prediction(store, patient_id)
+    prow = {}
+    if patient_id in store.patients.set_index("patient_id").index:
+        prow = store.patients.set_index("patient_id").loc[patient_id].to_dict()
+
+    return {
+        "patient_id": patient_id,
+        "predicted_subtype": oof_pred.predicted_subtype,
+        "confidence": round(float(oof_pred.confidence), 4),
+        "probabilities": oof_pred.probabilities,
+        "modality_weights": oof_pred.modality_weights,
+        "fold_id": oof_pred.fold_id,
+        "true_pam50": str(prow.get("true_pam50", "Unknown")),
+        "model_version": "GraphGPS-v1.0-4c26722",
+    }
+
+
+@app.get("/api/security/patient/{patient_id}")
+def get_patient_security_status(patient_id: str):
+    store = _require_store()
+    if patient_id not in store.patient_index:
+        raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
+
+    vault = get_patient_vault()
+    polygon = get_polygon_service()
+    cohort = get_cohort_manager()
+
+    record = _get_canonical_patient_data(store, patient_id)
+    p_hash = vault.anonymize_id(patient_id)
+    current_fp = vault.compute_fingerprint(record)
+    verification = polygon.verify_record(p_hash, current_fp)
+
+    # Merkle Batch proof & verification
+    leaf_hash = compute_patient_leaf(
+        p_hash,
+        current_fp,
+        str(record.get("predicted_subtype", "LumA")),
+        float(record.get("confidence", 0.95)),
+    )
+    proof_data = cohort.get_patient_proof(patient_id)
+    cohort_verif = cohort.verify_patient_leaf(patient_id, leaf_hash)
+
+    # If not individually anchored, check if verified via Cohort Merkle Root
+    if not verification.get("is_anchored") and proof_data.get("has_proof"):
+        is_merkle_valid = cohort_verif.get("is_verified", False)
+        receipt = proof_data.get("receipt", {})
+        verification = {
+            "is_anchored": True,
+            "is_unaltered": is_merkle_valid,
+            "status": "VERIFIED_AUTHENTIC" if is_merkle_valid else "TAMPER_DETECTED",
+            "method": "MERKLE_TREE_BATCH_PROOF",
+            "timestamp": receipt.get("timestamp"),
+            "authority": receipt.get("authority"),
+            "tx_hash": receipt.get("tx_hash"),
+            "block_number": receipt.get("block_number"),
+            "polygonscan_url": receipt.get("polygonscan_url"),
+            "network": receipt.get("network", "Polygon Amoy Testnet (Chain ID 80002)"),
+            "merkle_root": proof_data.get("merkle_root"),
+            "proof_length": proof_data.get("proof_length", 10),
+        }
+
+    return {
+        "patient_id": patient_id,
+        "patient_hash": p_hash,
+        "current_fingerprint": current_fp,
+        "leaf_hash": leaf_hash,
+        "is_tampered": verification.get("status") == "TAMPER_DETECTED",
+        "is_simulated_tamper": patient_id in _SIMULATED_TAMPER_RECORDS,
+        "verification": verification,
+        "merkle_proof": proof_data,
+        "cohort_status": cohort.get_status(),
+    }
+
+
+@app.post("/api/security/anchor/{patient_id}")
+def anchor_patient_to_polygon(patient_id: str):
+    store = _require_store()
+    if patient_id not in store.patient_index:
+        raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
+
+    # Clear any active simulated tamper before anchoring authentic record
+    _SIMULATED_TAMPER_RECORDS.pop(patient_id, None)
+
+    vault = get_patient_vault()
+    polygon = get_polygon_service()
+
+    record = _get_canonical_patient_data(store, patient_id)
+    p_hash, current_fp = vault.store_encrypted_record(patient_id, record)
+
+    subtype_order = ["LumA", "LumB", "Her2", "Basal", "Normal"]
+    pred_subtype = record.get("predicted_subtype", "LumA")
+    sub_idx = subtype_order.index(pred_subtype) if pred_subtype in subtype_order else 0
+    conf_bps = int(float(record.get("confidence", 0.90)) * 10000)
+
+    anchored = polygon.anchor_record(
+        patient_hash=p_hash,
+        data_fingerprint=current_fp,
+        model_version="GraphGPS-4c26722",
+        predicted_subtype=sub_idx,
+        confidence_bps=conf_bps,
+    )
+
+    verification = polygon.verify_record(p_hash, current_fp)
+
+    return {
+        "status": "success",
+        "patient_id": patient_id,
+        "patient_hash": p_hash,
+        "data_fingerprint": current_fp,
+        "anchored": anchored,
+        "verification": verification,
+    }
+
+
+@app.post("/api/security/simulate-tamper/{patient_id}")
+def simulate_patient_tamper(patient_id: str):
+    store = _require_store()
+    if patient_id not in store.patient_index:
+        raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
+
+    vault = get_patient_vault()
+    polygon = get_polygon_service()
+
+    # Create mutated clone
+    rec = copy.deepcopy(_get_canonical_patient_data(store, patient_id))
+    orig_subtype = rec.get("predicted_subtype", "LumA")
+    mutated_subtype = "Basal" if orig_subtype != "Basal" else "LumA"
+    rec["predicted_subtype"] = mutated_subtype
+    rec["confidence"] = 0.9999
+    _SIMULATED_TAMPER_RECORDS[patient_id] = rec
+
+    p_hash = vault.anonymize_id(patient_id)
+    tampered_fp = vault.compute_fingerprint(rec)
+    verification = polygon.verify_record(p_hash, tampered_fp)
+
+    return {
+        "status": "tampered",
+        "patient_id": patient_id,
+        "tampered_field": "predicted_subtype",
+        "original_subtype": orig_subtype,
+        "tampered_subtype": mutated_subtype,
+        "tampered_fingerprint": tampered_fp,
+        "verification": verification,
+    }
+
+
+@app.post("/api/security/restore/{patient_id}")
+def restore_patient_integrity(patient_id: str):
+    store = _require_store()
+    if patient_id not in store.patient_index:
+        raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
+
+    _SIMULATED_TAMPER_RECORDS.pop(patient_id, None)
+
+    vault = get_patient_vault()
+    polygon = get_polygon_service()
+
+    record = _get_canonical_patient_data(store, patient_id)
+    p_hash = vault.anonymize_id(patient_id)
+    current_fp = vault.compute_fingerprint(record)
+    verification = polygon.verify_record(p_hash, current_fp)
+
+    return {
+        "status": "restored",
+        "patient_id": patient_id,
+        "current_fingerprint": current_fp,
+        "verification": verification,
+    }
+
+
+# =========================================================================
+# Cohort Merkle Batch Anchoring & Verification Endpoints
+# =========================================================================
+
+@app.get("/api/security/cohort/status")
+def get_cohort_batch_status():
+    cohort = get_cohort_manager()
+    polygon = get_polygon_service()
+    status = cohort.get_status()
+
+    bal_pol = "0.0"
+    if polygon.w3 and polygon.w3.is_connected() and polygon.account:
+        try:
+            bal_wei = polygon.w3.eth.get_balance(polygon.account.address)
+            bal_pol = str(round(float(polygon.w3.from_wei(bal_wei, "ether")), 6))
+        except Exception:
+            pass
+
+    status["wallet_address"] = polygon.account.address if polygon.account else None
+    status["wallet_balance_pol"] = bal_pol
+    status["contract_address"] = polygon.contract_address
+    return status
+
+
+@app.post("/api/security/cohort/anchor")
+def anchor_entire_cohort():
+    store = _require_store()
+    cohort = get_cohort_manager()
+    result = cohort.build_and_anchor_cohort(store, _get_canonical_patient_data)
+    return result
+
+
+
+@app.get("/api/security/cohort/proof/{patient_id}")
+def get_patient_merkle_proof(patient_id: str):
+    store = _require_store()
+    if patient_id not in store.patient_index:
+        raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
+    cohort = get_cohort_manager()
+    return cohort.get_patient_proof(patient_id)
+
+
+@app.post("/api/security/cohort/verify/{patient_id}")
+def verify_patient_merkle_proof(patient_id: str):
+    store = _require_store()
+    if patient_id not in store.patient_index:
+        raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
+    vault = get_patient_vault()
+    cohort = get_cohort_manager()
+    record = _get_canonical_patient_data(store, patient_id)
+    p_hash = vault.anonymize_id(patient_id)
+    current_fp = vault.compute_fingerprint(record)
+    leaf_hash = compute_patient_leaf(
+        p_hash,
+        current_fp,
+        str(record.get("predicted_subtype", "LumA")),
+        float(record.get("confidence", 0.95)),
+    )
+    return cohort.verify_patient_leaf(patient_id, leaf_hash)
+
 
 
 if __name__ == "__main__":

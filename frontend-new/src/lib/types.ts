@@ -310,3 +310,74 @@ export const MODALITY_LABELS = {
 };
 
 export const SUBTYPES: PAM50Subtype[] = ['LumA', 'LumB', 'Her2', 'Basal', 'Normal'];
+
+// ============== Blockchain & Security Types ==============
+
+export interface BlockchainVerification {
+  is_anchored: boolean;
+  is_unaltered: boolean;
+  status: 'VERIFIED_AUTHENTIC' | 'TAMPER_DETECTED' | 'NOT_YET_ANCHORED' | 'REVOKED_BY_PATIENT';
+  anchored_fingerprint?: string;
+  current_fingerprint?: string;
+  timestamp?: number;
+  tx_hash?: string;
+  block_number?: number;
+  authority?: string;
+  polygonscan_url?: string;
+  network?: string;
+  model_version?: string;
+  predicted_subtype?: number;
+  confidence_bps?: number;
+  message?: string;
+}
+
+export interface MerkleProof {
+  has_proof: boolean;
+  patient_id: string;
+  leaf_hash: string;
+  merkle_root: string;
+  proof_path: string[];
+  proof_length: number;
+  is_valid: boolean;
+  receipt?: Record<string, any>;
+  error?: string;
+}
+
+export interface CohortBatchStatus {
+  is_batch_anchored: boolean;
+  merkle_root?: string;
+  total_patients?: number;
+  tree_depth?: number;
+  timestamp?: number;
+  on_chain_receipt?: {
+    batch_identifier?: string;
+    cohort_name?: string;
+    merkle_root?: string;
+    total_records?: number;
+    timestamp?: number;
+    authority?: string;
+    tx_hash?: string;
+    block_number?: number;
+    network?: string;
+    is_live_chain?: boolean;
+    polygonscan_url?: string;
+    method?: string;
+  };
+  wallet_address?: string;
+  wallet_balance_pol?: string;
+  contract_address?: string;
+  message?: string;
+}
+
+export interface PatientSecurityStatus {
+  patient_id: string;
+  patient_hash: string;
+  current_fingerprint: string;
+  leaf_hash?: string;
+  is_tampered: boolean;
+  is_simulated_tamper: boolean;
+  verification: BlockchainVerification;
+  merkle_proof?: MerkleProof;
+  cohort_status?: CohortBatchStatus;
+}
+

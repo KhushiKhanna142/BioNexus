@@ -16,4 +16,12 @@ export const api = {
   patientGraphCompare: (patientId) => get(`/graphs/patient/${patientId}/compare`),
   graphOverview: (layer, maxNodes = 250) => get(`/graphs/${layer}/overview?max_nodes=${maxNodes}`),
   profile: (patientId, layer = 'rna', topN = 30) => get(`/profile/${patientId}?layer=${layer}&top_n=${topN}`),
+  securityStatus: (id) => get(`/security/patient/${id}`),
+  anchorPatient: (id) => fetch(`${BASE}/security/anchor/${id}`, { method: 'POST' }).then(r => r.json()),
+  simulateTamper: (id) => fetch(`${BASE}/security/simulate-tamper/${id}`, { method: 'POST' }).then(r => r.json()),
+  restorePatient: (id) => fetch(`${BASE}/security/restore/${id}`, { method: 'POST' }).then(r => r.json()),
+  cohortStatus: () => get('/security/cohort/status'),
+  anchorCohort: () => fetch(`${BASE}/security/cohort/anchor`, { method: 'POST' }).then(r => r.json()),
 }
+
+

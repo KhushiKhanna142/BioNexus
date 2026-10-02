@@ -103,6 +103,137 @@ export default function PredictionPanel({ patientId, onSelectPatient }) {
           </div>
         )}
       </div>
+
+      <div className="card" style={{ border: '1px solid #8247E5', background: 'rgba(130, 71, 229, 0.04)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div className="card-title" style={{ margin: 0, color: '#8247E5', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>⬡ Polygon Blockchain Patient Vault & Immutability</span>
+          </div>
+          {security?.verification?.is_unaltered && !security?.is_tampered ? (
+            <span style={{ fontSize: 11, background: '#10B981', color: '#fff', padding: '2px 8px', borderRadius: 12, fontWeight: 'bold' }}>
+              ✓ VERIFIED ON POLYGON
+            </span>
+          ) : security?.is_tampered ? (
+            <span style={{ fontSize: 11, background: '#EF4444', color: '#fff', padding: '2px 8px', borderRadius: 12, fontWeight: 'bold', animation: 'pulse 1.5s infinite' }}>
+              ⚠ TAMPER DETECTED
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, background: '#F59E0B', color: '#fff', padding: '2px 8px', borderRadius: 12, fontWeight: 'bold' }}>
+              NOT YET ANCHORED
+            </span>
+          )}
+        </div>
+
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
+          Patient records are encrypted off-chain with AES-256-GCM. A salted SHA-256 fingerprint is committed to Polygon Amoy Testnet.
+          Any local mutation to gene expression or PAM50 subtype immediately fails verification.
+        </p>
+
+        {security && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, marginBottom: 14 }}>
+            <div style={{ background: 'var(--panel)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase' }}>Pseudonymous Salted Hash (HIPAA de-identified)</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text)', wordBreak: 'break-all' }}>{security.patient_hash}</div>
+            </div>
+            <div style={{ background: 'var(--panel)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase' }}>Data Fingerprint (SHA-256 Digest)</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: security.is_tampered ? '#EF4444' : 'var(--text)', wordBreak: 'break-all' }}>
+                {security.current_fingerprint}
+              </div>
+            </div>
+            {security.verification?.is_anchored && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: 'var(--text-faint)' }}>
+                <span>Network: <strong>Polygon Amoy (80002)</strong> | Block #{security.verification.block_number}</span>
+                <a
+                  href={security.verification.polygonscan_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: '#8247E5', textDecoration: 'none', fontWeight: 'bold' }}
+                >
+                  PolygonScan ↗
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            className="layer-btn"
+            style={{ background: '#8247E5', color: '#fff', border: 'none' }}
+            disabled={secLoading}
+            onClick={() => {
+              setSecLoading(true)
+              api.anchorPatient(patientId)
+                .then(setSecurity)
+                .finally(() => setSecLoading(false))
+            }}
+          >
+            {secLoading ? 'Anchoring…' : 'Anchor to Polygon'}
+          </button>
+
+          {security?.verification?.is_anchored && !security?.is_tampered && (
+            <button
+              className="layer-btn"
+              style={{ background: '#EF4444', color: '#fff', border: 'none' }}
+              disabled={secLoading}
+              onClick={() => {
+                setSecLoading(true)
+                api.simulateTamper(patientId)
+                  .then(() => api.securityStatus(patientId).then(setSecurity))
+                  .finally(() => setSecLoading(false))
+              }}
+            >
+              Simulate Malicious Tamper
+            </button>
+          )}
+
+          {security?.is_tampered && (
+            <button
+              className="layer-btn"
+              style={{ background: '#10B981', color: '#fff', border: 'none' }}
+              disabled={secLoading}
+              onClick={() => {
+                setSecLoading(true)
+                api.restorePatient(patientId)
+                  .then(() => api.securityStatus(patientId).then(setSecurity))
+                  .finally(() => setSecLoading(false))
+              }}
+            >
+              Restore Authentic Data
+            </button>
+          )}
+
+          <button
+            className="layer-btn"
+            disabled={secLoading}
+            onClick={() => {
+              setSecLoading(true)
+              api.securityStatus(patientId)
+                .then(setSecurity)
+                .finally(() => setSecLoading(false))
+            }}
+          >
+            Verify Live
+          </button>
+
+          <button
+            className="layer-btn"
+            style={{ background: '#4F46E5', color: '#fff', border: 'none' }}
+            disabled={secLoading}
+            onClick={() => {
+              setSecLoading(true)
+              api.anchorCohort()
+                .then(() => api.securityStatus(patientId).then(setSecurity))
+                .finally(() => setSecLoading(false))
+            }}
+          >
+            Batch Anchor Cohort (646)
+          </button>
+        </div>
+
+      </div>
     </>
   )
 }
+

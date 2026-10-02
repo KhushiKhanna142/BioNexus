@@ -1,0 +1,179 @@
+{
+  "contractName": "PatientRecordRegistry",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "patientHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "predictedSubtype",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint16",
+          "name": "confidenceBps",
+          "type": "uint16"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "authority",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "RecordAnchored",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "patientHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "predictedSubtype",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "confidenceBps",
+          "type": "uint16"
+        }
+      ],
+      "name": "anchorRecord",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "latestRecord",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "authority",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "predictedSubtype",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "confidenceBps",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalAnchored",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "patientHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "verifyRecord",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "isValid",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "authority",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "subtypeId",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "confBps",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "608060405234801561000f575f80fd5b506104ae8061001d5f395ff3fe608060405234801561000f575f80fd5b506004361061004a575f3560e01c806332b710871461004e578063560d19ec14610076578063a212e36f14610101578063f838585f14610118575b5f80fd5b61006161005c3660046103ca565b610169565b60405190151581526020015b60405180910390f35b6100c561008436600461041c565b5f602081905290815260409020805460018201546002909201549091906001600160a01b03811690600160a01b810460ff1690600160a81b900461ffff1685565b6040805195865260208601949094526001600160a01b039092169284019290925260ff909116606083015261ffff16608082015260a00161006d565b61010a60015481565b60405190815260200161006d565b61012b610126366004610433565b610301565b60408051951515865260208601949094526001600160a01b039092169284019290925260ff909116606083015261ffff16608082015260a00161006d565b5f846101b35760405162461bcd60e51b8152602060048201526014602482015273092dcecc2d8d2c840e0c2e8d2cadce840d0c2e6d60631b60448201526064015b60405180910390fd5b836101f45760405162461bcd60e51b8152602060048201526011602482015270092dcecc2d8d2c840c8c2e8c240d0c2e6d607b1b60448201526064016101aa565b6040805160a0810182528581524260208083019182523383850190815260ff8089166060860190815261ffff808a16608088019081525f8e81529586905297852096518755945160018088019190915592516002909601805491519751909516600160a81b0261ffff60a81b1997909216600160a01b026001600160a81b03199091166001600160a01b039690961695909517949094179490941692909217905581548291906102a5908390610453565b90915550506040805160ff8516815261ffff84166020820152428183015290513391869188917f4f6893669974ccd37f107ccfa45ae7d75d115d0aa2fc91a5e43c0626ade5f5c0919081900360600190a4506001949350505050565b5f82815260208181526040808320815160a0810183528154815260018201549381018490526002909101546001600160a01b03811692820192909252600160a01b820460ff166060820152600160a81b90910461ffff166080820152829182918291829190158015906103745750805187145b1561039f576001816020015182604001518360600151846080015195509550955095509550506103c0565b5f816020015182604001518360600151846080015195509550955095509550505b9295509295909350565b5f805f80608085870312156103dd575f80fd5b8435935060208501359250604085013560ff811681146103fb575f80fd5b9150606085013561ffff81168114610411575f80fd5b939692955090935050565b5f6020828403121561042c575f80fd5b5035919050565b5f8060408385031215610444575f80fd5b50508035926020909101359150565b8082018082111561047257634e487b7160e01b5f52601160045260245ffd5b9291505056fea2646970667358221220ec8f762c2cf24de1c04d8f7e42b852ad431be9aeba255d4b52addd85bf4c033e64736f6c63430008140033"
+}
