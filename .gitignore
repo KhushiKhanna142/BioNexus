@@ -44,3 +44,9 @@ mlflow.db
 prompt_9_full.txt
 *.png
 
+.env
+data/security/polygon_ledger.json
+frontend_old/node_modules/
+data/security/vault_master.key
+data/security/vault_salt.txt
+data/security/records/*.enc

@@ -3,10 +3,8 @@ import type {
   CohortStats, PatientGraph, OmicsProfile, PAM50Subtype, CausalValidation,
   GraphSummaryResponse, PatientEgoGraphResponse, PatientGraphCompareResponse, GraphOverviewResponse,
   CostAccuracyResponse, CaseQCReportResponse, BatchResponse,
+  PatientSecurityStatus, CohortBatchStatus, MerkleProof,
 } from '@/lib/types';
-
-
-
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 export class ApiError extends Error {
@@ -387,7 +385,37 @@ export const api = {
     }
     return res.blob();
   },
+
+  async getSecurityStatus(patientId: string): Promise<PatientSecurityStatus> {
+    return fetchAPI<PatientSecurityStatus>(`/api/security/patient/${patientId}`);
+  },
+
+  async anchorPatient(patientId: string): Promise<PatientSecurityStatus> {
+    return fetchAPI<PatientSecurityStatus>(`/api/security/anchor/${patientId}`, { method: 'POST' });
+  },
+
+  async simulateTamper(patientId: string): Promise<Record<string, unknown>> {
+    return fetchAPI<Record<string, unknown>>(`/api/security/simulate-tamper/${patientId}`, { method: 'POST' });
+  },
+
+  async restorePatient(patientId: string): Promise<Record<string, unknown>> {
+    return fetchAPI<Record<string, unknown>>(`/api/security/restore/${patientId}`, { method: 'POST' });
+  },
+
+  async getCohortStatus(): Promise<CohortBatchStatus> {
+    return fetchAPI<CohortBatchStatus>('/api/security/cohort/status');
+  },
+
+  async anchorCohort(): Promise<Record<string, unknown>> {
+    return fetchAPI<Record<string, unknown>>('/api/security/cohort/anchor', { method: 'POST' });
+  },
+
+  async getPatientMerkleProof(patientId: string): Promise<MerkleProof> {
+    return fetchAPI<MerkleProof>(`/api/security/cohort/proof/${patientId}`);
+  },
+
+  async verifyPatientMerkle(patientId: string): Promise<Record<string, unknown>> {
+    return fetchAPI<Record<string, unknown>>(`/api/security/cohort/verify/${patientId}`, { method: 'POST' });
+  },
 };
-
-
 
