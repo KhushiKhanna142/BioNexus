@@ -4,6 +4,10 @@ FROM python:3.11-slim AS builder
 WORKDIR /build
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml .
+# Install CPU-only torch first to keep image compact and build fast (<200MB instead of 2.5GB CUDA)
+RUN uv pip install --system --no-cache \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch
 RUN uv pip install --system --no-cache \
     fastapi \
     uvicorn \
@@ -15,7 +19,6 @@ RUN uv pip install --system --no-cache \
     pandas \
     pyarrow \
     reportlab \
-    torch \
     torch-geometric \
     scikit-learn \
     omegaconf \

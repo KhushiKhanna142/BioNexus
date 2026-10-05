@@ -3,8 +3,10 @@ services:
     name: bionexus-api
     runtime: docker
     dockerfilePath: docker/Dockerfile.serving
+    dockerContext: .
     plan: free
     region: oregon
+    healthCheckPath: /health
     envVars:
       - key: BIONEXUS_SERVING_DIR
         value: /app/data/serving
