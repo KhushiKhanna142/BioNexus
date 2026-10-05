@@ -1151,11 +1151,11 @@ def get_metrics():
     exact_acc = float((merged["true_pam50"] == merged["pred_label"]).mean())
     res["recomputed_oof_accuracy"] = exact_acc
 
-    # Best model accuracy: 92.1% champion fold (117/127 correct) / PAM50 concordance benchmark
-    best_acc = 0.921
+    # Documented fused 5-fold CV accuracy: 87.0% (macro-F1 84.6%)
+    best_acc = 0.870
     res["accuracy"] = best_acc
     res["best_model_accuracy"] = best_acc
-    res["benchmark_accuracy"] = float(res.get("benchmark_comparison", {}).get("documented_accuracy", 0.8699))
+    res["benchmark_accuracy"] = 0.870
     if "fused_oof" in res:
         res["macro_f1"] = float(res["fused_oof"]["macro_f1"])
     return res

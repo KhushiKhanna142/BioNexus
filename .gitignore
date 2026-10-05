@@ -50,3 +50,5 @@ frontend_old/node_modules/
 data/security/vault_master.key
 data/security/vault_salt.txt
 data/security/records/*.enc
+/data/cases/
+~$*
