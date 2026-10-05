@@ -22,7 +22,11 @@ RUN uv pip install --system --no-cache \
     torch-geometric \
     scikit-learn \
     omegaconf \
-    networkx
+    networkx \
+    web3 \
+    eth-account \
+    hexbytes \
+    cryptography
 
 FROM python:3.11-slim AS runtime
 

@@ -14,10 +14,24 @@ from pathlib import Path
 import time
 from typing import Any
 
-from eth_account import Account
-from hexbytes import HexBytes
-from web3 import Web3
-from web3.middleware import ExtraDataToPOAMiddleware
+try:
+    from eth_account import Account
+    from hexbytes import HexBytes
+    from web3 import Web3
+    try:
+        from web3.middleware import ExtraDataToPOAMiddleware
+    except ImportError:
+        try:
+            from web3.middleware import geth_poa_middleware as ExtraDataToPOAMiddleware
+        except ImportError:
+            ExtraDataToPOAMiddleware = None
+    HAS_WEB3 = True
+except ImportError:
+    Account = None
+    HexBytes = None
+    Web3 = None
+    ExtraDataToPOAMiddleware = None
+    HAS_WEB3 = False
 
 
 class PolygonService:
@@ -56,28 +70,38 @@ class PolygonService:
             self.abi = []
 
         # Initialize Web3
-        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
-        try:
-            self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        except Exception:
-            pass
+        if HAS_WEB3 and Web3 is not None and Account is not None:
+            try:
+                self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+                if ExtraDataToPOAMiddleware:
+                    try:
+                        self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+                    except Exception:
+                        pass
 
-        self.chain_id = 80002  # Polygon Amoy
+                self.chain_id = 80002  # Polygon Amoy
 
-        # Relayer account
-        if self.private_key:
-            if not self.private_key.startswith("0x"):
-                self.private_key = "0x" + self.private_key
-            self.account = Account.from_key(self.private_key)
+                # Relayer account
+                if self.private_key:
+                    pk = self.private_key if self.private_key.startswith("0x") else "0x" + self.private_key
+                    self.account = Account.from_key(pk)
+                else:
+                    self.account = Account.from_key("0x" + "b10" * 21 + "b")
+
+                if self.contract_address and self.abi:
+                    self.contract = self.w3.eth.contract(
+                        address=Web3.to_checksum_address(self.contract_address),
+                        abi=self.abi,
+                    )
+                else:
+                    self.contract = None
+            except Exception:
+                self.w3 = None
+                self.account = None
+                self.contract = None
         else:
-            self.account = Account.from_key("0x" + "b10" * 21 + "b")
-
-        if self.contract_address and self.abi:
-            self.contract = self.w3.eth.contract(
-                address=Web3.to_checksum_address(self.contract_address),
-                abi=self.abi,
-            )
-        else:
+            self.w3 = None
+            self.account = None
             self.contract = None
 
         self._load_ledger()
@@ -97,7 +121,7 @@ class PolygonService:
     def is_live_network_available(self) -> bool:
         """Checks if live Polygon node is reachable and configured with contract."""
         try:
-            return bool(self.w3.is_connected() and self.contract and self.private_key)
+            return bool(self.w3 and self.w3.is_connected() and self.contract and self.private_key)
         except Exception:
             return False
 
