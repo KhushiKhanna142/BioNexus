@@ -5,9 +5,11 @@ Supports environment variables prefixed with BIONEXUS_.
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
-from pydantic import Field
+from typing import Any, Union
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,12 +25,27 @@ class ServingSettings(BaseSettings):
     dev_mode: bool = Field(default=True, description="When true, bypasses strict auth for dev convenience")
     host: str = "0.0.0.0"
     port: int = 8000
-    cors_origins: list[str] = [
+    cors_origins: Union[list[str], str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://localhost:4173",
     ]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            s = v.strip()
+            if s.startswith("[") and s.endswith("]"):
+                try:
+                    return json.loads(s)
+                except Exception:
+                    pass
+            return [x.strip() for x in s.split(",") if x.strip()]
+        elif isinstance(v, (list, tuple)):
+            return [str(x) for x in v]
+        return v
 
     # Storage
     storage_backend: str = Field(default="local", description="local or s3")
