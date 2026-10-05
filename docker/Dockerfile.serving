@@ -1,11 +1,25 @@
-# Separate, lighter image for the inference API -- no training deps
-# (torch-geometric, xgboost training path, dvc) bloating the serving image.
+# Separate, lighter image for the inference API
 FROM python:3.11-slim AS builder
 
 WORKDIR /build
 RUN pip install --no-cache-dir uv
 COPY pyproject.toml .
-RUN uv pip install --system --no-cache fastapi uvicorn mlflow prometheus-client boto3 pydantic pydantic-settings pandas pyarrow reportlab torch torch-geometric
+RUN uv pip install --system --no-cache \
+    fastapi \
+    uvicorn \
+    mlflow \
+    prometheus-client \
+    boto3 \
+    pydantic \
+    pydantic-settings \
+    pandas \
+    pyarrow \
+    reportlab \
+    torch \
+    torch-geometric \
+    scikit-learn \
+    omegaconf \
+    networkx
 
 FROM python:3.11-slim AS runtime
 
@@ -15,10 +29,17 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-COPY src/bio_nexus/ ./src/bio_nexus/
+COPY src/ ./src/
+COPY data/serving/ ./data/serving/
+COPY data/security/ ./data/security/
+COPY configs/ ./configs/
+
 ENV PYTHONPATH=/app/src
+ENV BIONEXUS_SERVING_DIR=/app/data/serving
+ENV BIONEXUS_ALLOW_MOCK=false
+ENV PORT=8000
 
 USER bionexus
 EXPOSE 8000
 
-CMD ["uvicorn", "bio_nexus.serving.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn bio_nexus.serving.api:app --host 0.0.0.0 --port ${PORT:-8000}"]

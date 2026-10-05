@@ -152,9 +152,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.onrender\.com|https://.*\.railway\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
-    allow_headers=["Content-Type", "Authorization", "X-API-Key", "ngrok-skip-browser-warning"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount v1 product API router

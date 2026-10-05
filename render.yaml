@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: bionexus-api
+    runtime: docker
+    dockerfilePath: docker/Dockerfile.serving
+    plan: free
+    region: oregon
+    envVars:
+      - key: BIONEXUS_SERVING_DIR
+        value: /app/data/serving
+      - key: BIONEXUS_ALLOW_MOCK
+        value: "false"
+      - key: BIONEXUS_CORS_ORIGINS
+        value: "https://bio-nexus-topaz.vercel.app,http://localhost:5173"
