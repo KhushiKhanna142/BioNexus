@@ -506,8 +506,27 @@ export function DashboardPage() {
               </div>
 
               {predictError && (
-                <div className="p-3 mb-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
-                  {predictError}
+                <div className="p-3 mb-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {predictError.includes('404')
+                      ? 'Backend API offline (404). Once your cloud backend is deployed, set VITE_API_URL in Vercel.'
+                      : predictError}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (selectedPatientId) {
+                        setIsPredicting(true);
+                        setPredictError(null);
+                        api.predict(selectedPatientId)
+                          .then(setPrediction)
+                          .catch((e) => setPredictError(e.message))
+                          .finally(() => setIsPredicting(false));
+                      }
+                    }}
+                    className="px-2.5 py-1 bg-amber-200/70 hover:bg-amber-200 text-amber-900 rounded-lg font-semibold text-[10.5px] shrink-0 transition-colors"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 
