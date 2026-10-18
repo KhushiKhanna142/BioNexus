@@ -4,13 +4,15 @@ services:
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.14.1
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - ./mlruns:/mlruns
+      - ./mlflow.db:/mlruns/mlflow.db
     command: >
       mlflow server
-      --backend-store-uri /mlruns
+      --backend-store-uri sqlite:////mlruns/mlflow.db
       --default-artifact-root /mlruns
+      --serve-artifacts
       --host 0.0.0.0
 
   train:
@@ -30,15 +32,20 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.serving
+    depends_on:
+      - mlflow
     ports:
-      - "8000:8000"
+      - "5000:8000"
     volumes:
       - ./data/serving:/app/data/serving:ro
+      - ./mlruns:/mlruns:ro
     environment:
       - BIONEXUS_SERVING_DIR=/app/data/serving
       - BIONEXUS_ALLOW_MOCK=false
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - BIONEXUS_MODEL_URI=models:/mosaic-subtype-classifier/Production
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -55,4 +62,3 @@ services:
         condition: service_healthy
     environment:
       - VITE_API_URL=http://api:8000
-

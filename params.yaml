@@ -1,0 +1,46 @@
+# MOSAIC / BioNexus Pipeline Parameters
+smoke:
+  enabled: false
+  num_patients: 60
+  epochs: 2
+  folds: 1
+
+validation:
+  min_cohort_size: 613 # >= 95% of 646
+  max_feature_nan_fraction: 0.20
+  min_mean_correlation_top500: 0.08
+  min_graph_homophily_knn10: 0.55
+  min_signal_gain_lr: 0.15
+  min_class_count: 25
+
+features:
+  variance_threshold: 0.01
+  top_k_features:
+    rna: 1000
+    mirna: 500
+    meth: 1000
+  imputation_strategy: median
+  scaling: standard
+
+graphs:
+  knn_k: 10
+  metric: cosine
+  symmetrize: true
+  gene_gene_prior: false
+
+train:
+  architecture: "graphgps_cross_attention"
+  n_folds: 5
+  max_epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping_patience: 20
+  seed: 42
+  batch_size: 646 # Transductive full-graph
+
+registry:
+  model_name: "mosaic-subtype-classifier"
+  alias: "champion"
+  staging_alias: "candidate"
+  max_ece: 0.10
+  min_macro_f1_delta: 0.0

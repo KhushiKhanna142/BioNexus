@@ -3,30 +3,14 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 RUN pip install --no-cache-dir uv
-COPY pyproject.toml .
 # Install CPU-only torch first to keep image compact and build fast (<200MB instead of 2.5GB CUDA)
 RUN uv pip install --system --no-cache \
     --index-url https://download.pytorch.org/whl/cpu \
     torch
+COPY requirements-serve.lock .
 RUN uv pip install --system --no-cache \
-    fastapi \
-    uvicorn \
-    mlflow \
-    prometheus-client \
-    boto3 \
-    pydantic \
-    pydantic-settings \
-    pandas \
-    pyarrow \
-    reportlab \
-    torch-geometric \
-    scikit-learn \
-    omegaconf \
-    networkx \
-    web3 \
-    eth-account \
-    hexbytes \
-    cryptography
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r requirements-serve.lock
 
 FROM python:3.11-slim AS runtime
 
@@ -44,7 +28,7 @@ COPY configs/ ./configs/
 ENV PYTHONPATH=/app/src
 ENV BIONEXUS_SERVING_DIR=/app/data/serving
 ENV BIONEXUS_ALLOW_MOCK=false
-ENV PORT=8000
+RUN mkdir -p /app/data/audit /app/data/cases && chown -R bionexus:bionexus /app/data
 
 USER bionexus
 EXPOSE 8000
