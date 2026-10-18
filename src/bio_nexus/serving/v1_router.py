@@ -1367,8 +1367,13 @@ def get_model_card(user: AuthenticatedUser = Depends(require_role("viewer"))):
 
 @v1_router.get("/health", summary="Liveness and readiness probe")
 def v1_health():
+    import bio_nexus.serving.api as api_mod
+    store = getattr(api_mod, "STORE", None)
+    is_model_loaded = bool(getattr(store, "model_loaded", False)) if store else False
     return {
-        "status": "healthy",
+        "status": "healthy" if is_model_loaded else "degraded",
+        "model_loaded": is_model_loaded,
+        "model_load_error": getattr(store, "model_load_error", None) if store else "Store unloaded",
         "environment": settings.env,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "storage": settings.storage_backend,

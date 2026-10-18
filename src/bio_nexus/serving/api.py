@@ -161,11 +161,19 @@ app.add_middleware(
 # Mount v1 product API router
 app.include_router(v1_router)
 
+# Mount model comparison router
+try:
+    from model_comparison.data_source import default_source
+    from model_comparison.router import create_router
+    app.include_router(create_router(default_source()))
+except Exception as exc:
+    logger.warning("Could not mount model_comparison router: %s", exc)
+
+
 # Top-level convenience redirects / aliases
-@app.get("/health", include_in_schema=False)
+@app.get("/health", response_model=HealthResponse, tags=["System"])
 def root_health():
-    from bio_nexus.serving.v1_router import v1_health
-    return v1_health()
+    return health()
 
 @app.get("/version", include_in_schema=False)
 def root_version():
@@ -223,12 +231,17 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 # System & Meta Endpoints
 # =========================================================================
 
-@app.get("/api/health", response_model=HealthResponse)
+@app.get("/api/health", response_model=HealthResponse, tags=["System"])
 def health():
     if STORE is None:
         return HealthResponse(
             status="degraded",
             mode="unloaded",
+            model_loaded=False,
+            model_source=None,
+            model_version=None,
+            model_load_error="Artifacts store not loaded",
+            model_uri=os.getenv("BIONEXUS_MODEL_URI", "models:/mosaic-subtype-classifier/Production"),
             missing_artifacts=MISSING,
             artifact_versions={},
             manifest_hash=None,
@@ -237,9 +250,18 @@ def health():
             allow_mock=False,
         )
     manifest_hash = STORE.manifest.get("git_commit") or STORE.model_card.get("git_commit")
+    is_model_loaded = bool(getattr(STORE, "model_loaded", False))
+    load_err = getattr(STORE, "model_load_error", None)
+    status_str = "healthy" if is_model_loaded else "degraded"
+
     return HealthResponse(
-        status="healthy",
+        status=status_str,
         mode="live",
+        model_loaded=is_model_loaded,
+        model_source=getattr(STORE, "model_source", None),
+        model_version=getattr(STORE, "model_version", None),
+        model_load_error=load_err,
+        model_uri=getattr(STORE, "model_uri", None),
         missing_artifacts=[],
         artifact_versions=STORE.versions(),
         manifest_hash=manifest_hash,
@@ -249,11 +271,17 @@ def health():
     )
 
 
-@app.get("/api/model-info")
+@app.get("/model-info", tags=["System"], include_in_schema=False)
+@app.get("/api/model-info", tags=["System"])
 def model_info():
     store = _require_store()
     card = dict(store.model_card)
     card["subtypes"] = PAM50_SUBTYPES
+    card["model_loaded"] = bool(getattr(store, "model_loaded", False))
+    card["model_source"] = getattr(store, "model_source", None)
+    card["model_version"] = getattr(store, "model_version", None)
+    card["model_load_error"] = getattr(store, "model_load_error", None)
+    card["model_uri"] = getattr(store, "model_uri", os.getenv("BIONEXUS_MODEL_URI", "models:/mosaic-subtype-classifier/Production"))
     card["training_settings"] = {
         "n_folds": 5,
         "learning_rate": 1e-3,
@@ -405,16 +433,40 @@ def _compute_oof_prediction(store: ArtifactStore, patient_id: str) -> Prediction
     )
 
 
-@app.post("/api/predict", response_model=PredictionResponse)
+@app.post("/predict", response_model=PredictionResponse, tags=["Inference"], include_in_schema=False)
+@app.post("/api/predict", response_model=PredictionResponse, tags=["Inference"])
 def predict_post(req: PredictionRequest, request: Request):
     _rate_limit(request, "predict")
-    return _compute_oof_prediction(_require_store(), req.patient_id)
+    store = _require_store()
+    if not getattr(store, "model_loaded", False):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "model_not_loaded",
+                "message": "Serving model is not loaded. Cannot run inference.",
+                "model_load_error": getattr(store, "model_load_error", "No registered champion model available in MLflow"),
+                "model_uri": getattr(store, "model_uri", None),
+            },
+        )
+    return _compute_oof_prediction(store, req.patient_id)
 
 
-@app.get("/api/predict/{patient_id}", response_model=PredictionResponse)
+@app.get("/predict/{patient_id}", response_model=PredictionResponse, tags=["Inference"], include_in_schema=False)
+@app.get("/api/predict/{patient_id}", response_model=PredictionResponse, tags=["Inference"])
 def predict_get(patient_id: str, request: Request):
     _rate_limit(request, "predict")
-    return _compute_oof_prediction(_require_store(), patient_id)
+    store = _require_store()
+    if not getattr(store, "model_loaded", False):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "model_not_loaded",
+                "message": "Serving model is not loaded. Cannot run inference.",
+                "model_load_error": getattr(store, "model_load_error", "No registered champion model available in MLflow"),
+                "model_uri": getattr(store, "model_uri", None),
+            },
+        )
+    return _compute_oof_prediction(store, patient_id)
 
 
 # =========================================================================

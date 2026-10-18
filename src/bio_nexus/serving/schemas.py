@@ -18,6 +18,11 @@ class ErrorBody(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     mode: Literal["live", "unloaded"]
+    model_loaded: bool = False
+    model_source: str | None = None
+    model_version: str | None = None
+    model_load_error: str | None = None
+    model_uri: str | None = None
     missing_artifacts: list[str] = Field(default_factory=list)
     artifact_versions: dict[str, str] = Field(default_factory=dict)
     manifest_hash: str | None = None

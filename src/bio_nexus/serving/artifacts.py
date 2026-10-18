@@ -103,6 +103,11 @@ class ArtifactStore:
     pyg_graphs: list[Any] = field(default_factory=list)
     fold_models: dict[int, Any] = field(default_factory=dict)
     best_model: Any | None = None
+    model_loaded: bool = False
+    model_source: str | None = None
+    model_version: str | None = None
+    model_load_error: str | None = None
+    model_uri: str | None = None
 
     @classmethod
     def load(cls, directory: Path) -> ArtifactStore:
@@ -232,45 +237,99 @@ class ArtifactStore:
                 self.explorer_neighbor_map[layer] = dict(nbr_map)
 
     def _load_live_models_and_graphs(self) -> None:
-        """Preload PyG graphs and PyTorch fold checkpoints once at startup."""
+        """Preload PyG graphs and attempt to load Production/champion model from MLflow."""
+        import os
         repo_root = self.directory.parents[1]
         ckpt_dir = repo_root / "data" / "processed" / "checkpoints"
         graph_dir = repo_root / "data" / "processed" / "graphs"
 
+        # 1. Load reference PyG graphs if present
         if (graph_dir / "rna_graph.pt").exists():
             try:
-                from bio_nexus.models.classifier import BioNexusClassifier
                 rna_g = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
                 mirna_g = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
                 meth_g = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
                 self.pyg_graphs = [rna_g, mirna_g, meth_g]
-
-                for f in range(1, 6):
-                    f_path = ckpt_dir / f"fold_{f}.pt"
-                    if f_path.exists():
-                        m = BioNexusClassifier(
-                            rna_in_features=rna_g.x.shape[1],
-                            mirna_in_features=mirna_g.x.shape[1],
-                            meth_in_features=meth_g.x.shape[1],
-                        )
-                        m.load_state_dict(torch.load(f_path, map_location="cpu", weights_only=True))
-                        m.eval()
-                        self.fold_models[f] = m
-
-                b_path = ckpt_dir / "best_model.pt"
-                if b_path.exists():
-                    bm = BioNexusClassifier(
-                        rna_in_features=rna_g.x.shape[1],
-                        mirna_in_features=mirna_g.x.shape[1],
-                        meth_in_features=meth_g.x.shape[1],
-                    )
-                    bm.load_state_dict(torch.load(b_path, map_location="cpu", weights_only=True))
-                    bm.eval()
-                    self.best_model = bm
-
-                print(f"[serving] Live PyTorch models loaded: {len(self.fold_models)} folds + best_model")
             except Exception as e:
-                print(f"[serving] Warning loading live models: {e}")
+                print(f"[serving] Warning loading reference graphs: {e}")
+
+        # 2. Attempt to load registered model from MLflow
+        model_uri = os.getenv("BIONEXUS_MODEL_URI", "models:/mosaic-subtype-classifier/Production")
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+        if not tracking_uri:
+            db_path = repo_root / "mlflow.db"
+            tracking_uri = f"sqlite:///{db_path.resolve()}" if db_path.exists() else "sqlite:///:memory:"
+        self.model_uri = model_uri
+        self.model_loaded = False
+        self.best_model = None
+
+        try:
+            import mlflow
+            import mlflow.pytorch
+            mlflow.set_tracking_uri(tracking_uri)
+            try:
+                loaded_model = mlflow.pytorch.load_model(model_uri)
+            except Exception as direct_exc:
+                # Handle host vs container path mismatch (e.g. C:/... vs /mlruns/...)
+                loaded_model = None
+                try:
+                    from mlflow.client import MlflowClient
+                    client = MlflowClient(tracking_uri=tracking_uri)
+                    parts = model_uri.replace("models:/", "").split("/")
+                    m_name = parts[0]
+                    stage_or_ver = parts[1] if len(parts) > 1 else "Production"
+                    mvs = client.get_latest_versions(m_name, stages=[stage_or_ver])
+                    if mvs:
+                        raw_src = mvs[0].source.replace("file:", "").replace("\\", "/")
+                        if "mlruns/" in raw_src:
+                            suffix = raw_src[raw_src.index("mlruns/") + len("mlruns/") :]
+                            candidates = [
+                                Path("/mlruns") / suffix,
+                                repo_root / "mlruns" / suffix,
+                            ]
+                            for cand in candidates:
+                                if cand.exists() and (cand / "MLmodel").exists():
+                                    loaded_model = mlflow.pytorch.load_model(str(cand))
+                                    break
+                except Exception:
+                    pass
+                if loaded_model is None:
+                    raise direct_exc
+
+            loaded_model.eval()
+            self.best_model = loaded_model
+            self.model_loaded = True
+            self.model_source = "mlflow_registry"
+            self.model_version = model_uri
+            self.model_load_error = None
+            print(f"[serving] Successfully loaded champion model from MLflow: {model_uri}")
+        except Exception as mlflow_exc:
+            err_msg = f"Failed to load from MLflow ({model_uri}): {mlflow_exc}"
+            self.model_load_error = err_msg
+            print(f"[serving] {err_msg}")
+
+            # Optional local checkpoint fallback if explicitly enabled
+            if os.getenv("BIONEXUS_ALLOW_LOCAL_FALLBACK", "false").lower() in ("true", "1"):
+                b_path = ckpt_dir / "best_model.pt"
+                if b_path.exists() and self.pyg_graphs:
+                    try:
+                        from bio_nexus.models.classifier import BioNexusClassifier
+                        bm = BioNexusClassifier(
+                            rna_in_features=self.pyg_graphs[0].x.shape[1],
+                            mirna_in_features=self.pyg_graphs[1].x.shape[1],
+                            meth_in_features=self.pyg_graphs[2].x.shape[1],
+                        )
+                        bm.load_state_dict(torch.load(b_path, map_location="cpu", weights_only=True))
+                        bm.eval()
+                        self.best_model = bm
+                        self.model_loaded = True
+                        self.model_source = "local_checkpoint_provisional"
+                        self.model_version = "provisional_best_model"
+                        self.model_load_error = None
+                        print(f"[serving] Loaded provisional local checkpoint: {b_path}")
+                    except Exception as fb_exc:
+                        self.model_load_error = f"{err_msg}; local fallback failed: {fb_exc}"
+                        print(f"[serving] Fallback failed: {fb_exc}")
 
     def versions(self) -> dict[str, str]:
         out = {}

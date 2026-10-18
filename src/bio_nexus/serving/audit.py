@@ -20,7 +20,12 @@ logger = logging.getLogger("bionexus.audit")
 class AuditLogger:
     def __init__(self, log_path: Path | None = None):
         self.log_path = log_path or settings.audit_log_path
-        self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            import tempfile
+            self.log_path = Path(tempfile.gettempdir()) / "bionexus_audit.log"
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
 
     def record_event(
         self,
