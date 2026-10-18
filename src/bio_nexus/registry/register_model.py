@@ -29,7 +29,7 @@ from bio_nexus.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-MODEL_NAME = "bionexus-subtype-classifier"
+MODEL_NAME = os.getenv("BIONEXUS_MODEL_NAME", "mosaic-subtype-classifier")
 EXPERIMENT_INFO_PATH = Path("reports/experiment_info.json")
 
 
