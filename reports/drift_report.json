@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-10-18T15:39:53.336746+00:00",
+  "feature_drift": {
+    "modality": "rna",
+    "total_features_tested": 200,
+    "drifted_features_count": 0,
+    "drift_share": 0.0,
+    "drift_detected": false,
+    "sample_p_values": {
+      "ENSG00000001502": 0.8581707451635228,
+      "ENSG00000002587": 0.9345309826593785,
+      "ENSG00000002654": 0.8376891349606105,
+      "ENSG00000001056": 0.9783312721866098,
+      "ENSG00000000706": 0.8102155710508195,
+      "ENSG00000000107": 0.9508647464012903,
+      "ENSG00000000590": 0.966098821565104,
+      "ENSG00000002469": 0.9928054487670492,
+      "ENSG00000002414": 0.4563315214205272,
+      "ENSG00000001601": 0.4010462456441263
+    }
+  },
+  "prediction_drift": {
+    "n_samples": 646,
+    "observed_proportions": {
+      "LumA": 0.0,
+      "LumB": 0.0,
+      "Her2": 0.0,
+      "Basal": 0.0,
+      "Normal": 0.0
+    },
+    "reference_proportions": {
+      "LumA": 0.4938,
+      "LumB": 0.1873,
+      "Basal": 0.1656,
+      "Her2": 0.1146,
+      "Normal": 0.0387
+    },
+    "chi2_statistic": 0.0,
+    "p_value": 1.0,
+    "drift_detected": false
+  },
+  "retraining_recommended": false,
+  "action": "continue_monitoring"
+}

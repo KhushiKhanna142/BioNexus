@@ -1,0 +1,103 @@
+{
+  "status": "provisional_plumbing_checkpoints",
+  "data_validated": false,
+  "cohort_size": 646,
+  "n_folds": 5,
+  "oof_metrics": {
+    "accuracy": 0.1362,
+    "balanced_accuracy": 0.1935,
+    "macro_f1": 0.1092,
+    "weighted_f1": 0.083,
+    "log_loss": 1.9205,
+    "ece": 0.2234,
+    "per_subtype_f1": {
+      "LumA": 0.0,
+      "LumB": 0.1667,
+      "Her2": 0.0388,
+      "Basal": 0.2635,
+      "Normal": 0.0769
+    }
+  },
+  "per_fold": {
+    "fold_1": {
+      "val_samples": 130,
+      "accuracy": 0.0538,
+      "balanced_accuracy": 0.2091,
+      "macro_f1": 0.0324,
+      "weighted_f1": 0.016,
+      "log_loss": 1.6047,
+      "ece": 0.1706,
+      "per_subtype_f1": {
+        "LumA": 0.0,
+        "LumB": 0.0,
+        "Her2": 0.0,
+        "Basal": 0.069,
+        "Normal": 0.093
+      }
+    },
+    "fold_2": {
+      "val_samples": 129,
+      "accuracy": 0.1085,
+      "balanced_accuracy": 0.1495,
+      "macro_f1": 0.064,
+      "weighted_f1": 0.0562,
+      "log_loss": 1.7014,
+      "ece": 0.1484,
+      "per_subtype_f1": {
+        "LumA": 0.0,
+        "LumB": 0.2637,
+        "Her2": 0.0563,
+        "Basal": 0.0,
+        "Normal": 0.0
+      }
+    },
+    "fold_3": {
+      "val_samples": 129,
+      "accuracy": 0.1705,
+      "balanced_accuracy": 0.2,
+      "macro_f1": 0.0583,
+      "weighted_f1": 0.0497,
+      "log_loss": 1.9972,
+      "ece": 0.3663,
+      "per_subtype_f1": {
+        "LumA": 0.0,
+        "LumB": 0.0,
+        "Her2": 0.0,
+        "Basal": 0.2914,
+        "Normal": 0.0
+      }
+    },
+    "fold_4": {
+      "val_samples": 129,
+      "accuracy": 0.1783,
+      "balanced_accuracy": 0.2015,
+      "macro_f1": 0.1036,
+      "weighted_f1": 0.0936,
+      "log_loss": 1.8003,
+      "ece": 0.1616,
+      "per_subtype_f1": {
+        "LumA": 0.0,
+        "LumB": 0.2295,
+        "Her2": 0.0,
+        "Basal": 0.2883,
+        "Normal": 0.0
+      }
+    },
+    "fold_5": {
+      "val_samples": 129,
+      "accuracy": 0.1705,
+      "balanced_accuracy": 0.2,
+      "macro_f1": 0.0583,
+      "weighted_f1": 0.0497,
+      "log_loss": 2.5015,
+      "ece": 0.2703,
+      "per_subtype_f1": {
+        "LumA": 0.0,
+        "LumB": 0.0,
+        "Her2": 0.0,
+        "Basal": 0.2914,
+        "Normal": 0.0
+      }
+    }
+  }
+}
