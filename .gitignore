@@ -52,3 +52,11 @@ data/security/vault_salt.txt
 data/security/records/*.enc
 /data/cases/
 ~$*
+
+# Scratch and temporary scripts
+scratch_*.py
+check_cohort.py
+scripts/step1_*.py
+scripts/test_*.py
+scripts/verify_*.py
+scripts/check_deps.py
