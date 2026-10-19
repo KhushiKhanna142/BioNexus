@@ -1,0 +1,17 @@
+{
+  "id": "bionexus",
+  "name": "BioNexus (Graph Transformer)",
+  "family": "Graph Transformer",
+  "oof_proba": "data/serving/oof_predictions.parquet",
+  "metrics": {
+    "params_m": 1.12,
+    "train_time_min": 74.0,
+    "inference_ms": 18.5,
+    "gpu_required": true,
+    "attention_explanations": true,
+    "causal_ablation": true,
+    "cosmic_overlap_pct": null,
+    "cross_cohort_drop": null,
+    "noise_robustness": null
+  }
+}

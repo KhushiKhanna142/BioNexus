@@ -417,5 +417,10 @@ export const api = {
   async verifyPatientMerkle(patientId: string): Promise<Record<string, unknown>> {
     return fetchAPI<Record<string, unknown>>(`/api/security/cohort/verify/${patientId}`, { method: 'POST' });
   },
+
+  async getModelComparisonDashboard(models?: string[]): Promise<Record<string, unknown>> {
+    const q = models && models.length > 0 ? `?models=${models.join(',')}` : '';
+    return fetchAPI<Record<string, unknown>>(`/api/v1/model-comparison/dashboard${q}`);
+  },
 };
 

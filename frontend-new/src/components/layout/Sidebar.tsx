@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, UserSearch, Database, Brain,
   Users, BookOpen, Settings, ChevronLeft, ChevronRight,
-  FlaskConical, Route, Share2, TrendingUp, UploadCloud, KanbanSquare,
+  FlaskConical, Route, Share2, TrendingUp, UploadCloud, KanbanSquare, Scale,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { path: '/graph-explorer', label: 'Graph Explorer', icon: Share2 },
   { path: '/data-explorer', label: 'Data Explorer', icon: Database },
   { path: '/model-insights', label: 'Model Insights', icon: Brain },
+  { path: '/model-comparison', label: 'Model Comparison', icon: Scale },
   { path: '/cost-accuracy', label: 'Cost vs Accuracy', icon: TrendingUp },
   { path: '/cohort-analysis', label: 'Cohort Analysis', icon: Users },
   { path: '/research', label: 'Research', icon: BookOpen },

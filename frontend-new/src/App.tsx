@@ -12,6 +12,7 @@ import { BiomarkersPage } from '@/pages/BiomarkersPage';
 import { PathwayAnalysisPage } from '@/pages/PathwayAnalysisPage';
 import { GraphExplorerPage } from '@/pages/GraphExplorerPage';
 import { CostAccuracyPage } from '@/pages/CostAccuracyPage';
+import { ModelComparisonPage } from '@/pages/ModelComparisonPage';
 import { NewCasePage } from '@/pages/NewCasePage';
 import { LiveCasePage } from '@/pages/LiveCasePage';
 import { BatchTriagePage } from '@/pages/BatchTriagePage';
@@ -46,6 +47,7 @@ function App() {
               <Route path="/graph-explorer" element={<GraphExplorerPage />} />
               <Route path="/data-explorer" element={<DataExplorerPage />} />
               <Route path="/model-insights" element={<ModelInsightsPage />} />
+              <Route path="/model-comparison" element={<ModelComparisonPage />} />
               <Route path="/cost-accuracy" element={<CostAccuracyPage />} />
               <Route path="/cohort-analysis" element={<CohortAnalysisPage />} />
               <Route path="/research" element={<ResearchPage />} />
