@@ -157,6 +157,7 @@ def test_live_oof_and_graph_646():
         oof = pd.read_parquet(REPO / "data" / "serving" / "oof_predictions.parquet")
         pats = pd.read_csv(REPO / "data" / "serving" / "patients.csv")
         merged = oof.merge(pats, on="patient_id")
+        recomputed = accuracy_score(merged["true_pam50"], merged["predicted_subtype"])
         # Provisional baseline validation accuracy from plumbing files (0.4334)
         assert recomputed > 0.40
         prof = client.get(f"/api/profile/{pid}", params={"layer": "rna", "top_n": 5}).json()
