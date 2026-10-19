@@ -21,7 +21,7 @@ import pandas as pd
 import torch
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sklearn.metrics.pairwise import cosine_similarity
 
 from bio_nexus.interpretability.attribution import integrated_gradients, top_attributed_features
@@ -175,6 +175,11 @@ except Exception as exc:
 
 
 # Top-level convenience redirects / aliases
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
+
+
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 def root_health():
     return health()
