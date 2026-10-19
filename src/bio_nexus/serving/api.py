@@ -598,12 +598,11 @@ def explain(
             return ExplanationResponse(patient_id=patient_id, layer=key, biomarkers=biomarkers)
 
     # 2. Live computation if not precomputed
-    if not store.pyg_graphs or not store.fold_models:
-        raise HTTPException(status_code=503, detail={"error": "model_not_ready_for_live_ig"})
-
     p_idx = store.patient_index[patient_id]
     fld = int(store.patients.set_index("patient_id").loc[patient_id, "fold_id"])
-    model = store.fold_models.get(fld, store.best_model)
+    model = store.fold_models.get(fld, store.best_model) if store.fold_models else store.best_model
+    if not store.pyg_graphs or model is None:
+        raise HTTPException(status_code=503, detail={"error": "model_not_ready_for_live_ig"})
 
     attr, pred_class, _ = integrated_gradients(model, store.pyg_graphs, key, p_idx, steps=50)
     feat_names = list(store.matrices[key].columns)
@@ -636,12 +635,11 @@ def ablate_genes(req: AblationRequest, request: Request):
     if req.patient_id not in store.patient_index:
         raise HTTPException(status_code=404, detail={"error": "patient_not_found"})
 
-    if not store.pyg_graphs or not store.fold_models:
-        raise HTTPException(status_code=503, detail={"error": "live_models_not_loaded"})
-
     p_idx = store.patient_index[req.patient_id]
     fld = int(store.patients.set_index("patient_id").loc[req.patient_id, "fold_id"])
-    model = store.fold_models.get(fld, store.best_model)
+    model = store.fold_models.get(fld, store.best_model) if store.fold_models else store.best_model
+    if not store.pyg_graphs or model is None:
+        raise HTTPException(status_code=503, detail={"error": "live_models_not_loaded"})
 
     layer_idx = {"rna": 0, "mirna": 1, "meth": 2}[key]
     feat_df = store.features[key]
@@ -732,12 +730,12 @@ def get_attention(patient_id: str):
     store = _require_store()
     if patient_id not in store.patient_index:
         raise HTTPException(status_code=404, detail={"error": "patient_not_found"})
-    if not store.pyg_graphs or not store.fold_models:
-        raise HTTPException(status_code=503, detail={"error": "live_models_not_loaded"})
 
     p_idx = store.patient_index[patient_id]
     fld = int(store.patients.set_index("patient_id").loc[patient_id, "fold_id"])
-    model = store.fold_models.get(fld, store.best_model)
+    model = store.fold_models.get(fld, store.best_model) if store.fold_models else store.best_model
+    if not store.pyg_graphs or model is None:
+        raise HTTPException(status_code=503, detail={"error": "live_models_not_loaded"})
 
     with torch.no_grad():
         _, _, attn_weights, pool_weights = model(*store.pyg_graphs)

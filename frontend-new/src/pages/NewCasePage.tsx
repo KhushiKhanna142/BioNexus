@@ -106,7 +106,7 @@ export function NewCasePage() {
     try {
       const demo = await api.getDemoCase();
       setIsDemoData(true);
-      setPatientRef(String(demo.patient_ref || 'DEMO-TCGA-AR-A1AR'));
+      setPatientRef(String(demo.patient_ref || 'DEMO-TCGA-3C-AAAU'));
 
       // Create synthetic demo files for UI representation
       const createDummyFile = (name: string, count: number) =>

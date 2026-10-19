@@ -70,7 +70,7 @@ const STEPPER_ITEMS = [
 
 export function PatientAnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialPid = searchParams.get('patient') || 'TCGA-AR-A1AR';
+  const initialPid = searchParams.get('patient') || 'TCGA-3C-AAAU';
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string>(initialPid);

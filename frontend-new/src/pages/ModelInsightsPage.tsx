@@ -154,7 +154,7 @@ function ArchitectureSection() {
 
 function AttentionSection() {
   const [patients, setPatients] = useState<{ id: string }[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState('TCGA-AR-A1AR');
+  const [selectedPatientId, setSelectedPatientId] = useState('TCGA-3C-AAAU');
   const [attentionData, setAttentionData] = useState<{
     patient_id: string;
     layer_names: string[];

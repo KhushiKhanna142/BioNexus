@@ -40,7 +40,7 @@ export function PatientGraphExplorer({
   onSelectPatient,
   className = '',
 }: PatientGraphExplorerProps) {
-  const defaultPid = patientId || initialPatientId || 'TCGA-AR-A1AR';
+  const defaultPid = patientId || initialPatientId || 'TCGA-3C-AAAU';
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>(defaultPid);
   const [activeLayer, setActiveLayer] = useState<'rna' | 'mirna' | 'meth' | 'compare'>('rna');
@@ -296,13 +296,7 @@ export function PatientGraphExplorer({
     cancer_type: 'Breast Invasive Carcinoma (TCGA-BRCA)',
   };
 
-  const graphStats = egoData?.graph_stats_details || {
-    total_patients: 646,
-    total_edges: 5688,
-    neighbors_k: 10,
-    mean_similarity: 0.85,
-    same_subtype_neighbors: '7 / 10',
-  };
+  const graphStats = egoData?.graph_stats_details;
 
   const filteredPatients = patients.filter(p =>
     p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -824,23 +818,23 @@ export function PatientGraphExplorer({
                 <div className="divide-y divide-slate-100 text-xs">
                   <div className="py-1.5 flex justify-between">
                     <span className="text-slate-500 font-medium">Total Patients</span>
-                    <span className="font-mono font-bold text-slate-900">{graphStats.total_patients.toLocaleString()}</span>
+                    <span className="font-mono font-bold text-slate-900">{graphStats?.total_patients != null ? graphStats.total_patients.toLocaleString() : '—'}</span>
                   </div>
                   <div className="py-1.5 flex justify-between">
                     <span className="text-slate-500 font-medium">Total Edges (k=10)</span>
-                    <span className="font-mono font-bold text-slate-900">{graphStats.total_edges.toLocaleString()}</span>
+                    <span className="font-mono font-bold text-slate-900">{graphStats?.total_edges != null ? graphStats.total_edges.toLocaleString() : '—'}</span>
                   </div>
                   <div className="py-1.5 flex justify-between">
                     <span className="text-slate-500 font-medium">Neighbors (k)</span>
-                    <span className="font-mono font-bold text-slate-900">{graphStats.neighbors_k}</span>
+                    <span className="font-mono font-bold text-slate-900">{graphStats?.neighbors_k != null ? graphStats.neighbors_k : '—'}</span>
                   </div>
                   <div className="py-1.5 flex justify-between">
                     <span className="text-slate-500 font-medium">Mean Similarity (Top 10)</span>
-                    <span className="font-mono font-bold text-slate-900">{graphStats.mean_similarity.toFixed(2)}</span>
+                    <span className="font-mono font-bold text-slate-900">{graphStats?.mean_similarity != null ? graphStats.mean_similarity.toFixed(2) : '—'}</span>
                   </div>
                   <div className="py-1.5 flex justify-between">
                     <span className="text-slate-500 font-medium">Same Subtype Neighbors</span>
-                    <span className="font-mono font-bold text-slate-900">{graphStats.same_subtype_neighbors}</span>
+                    <span className="font-mono font-bold text-slate-900">{graphStats?.same_subtype_neighbors || '—'}</span>
                   </div>
                 </div>
               </div>

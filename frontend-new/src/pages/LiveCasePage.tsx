@@ -129,26 +129,20 @@ export function LiveCasePage() {
           patient_ref: parsed.patient_ref || id,
           created_at: parsed.created_at || new Date().toISOString(),
           specimen_type: parsed.specimen_type || 'primary_tumor',
-          predicted_subtype: parsed.predicted_subtype || parsed.prediction?.predicted_subtype || 'LumA',
-          confidence: parsed.confidence ?? parsed.prediction?.confidence ?? 0.88,
-          calibrated_probabilities: parsed.calibrated_probabilities || parsed.prediction?.calibrated_probabilities || {
-            LumA: 0.88,
-            LumB: 0.06,
-            Her2: 0.03,
-            Basal: 0.02,
-            Normal: 0.01,
-          },
-          confidence_tier: parsed.confidence_tier || parsed.prediction?.confidence_tier || 'high',
+          predicted_subtype: parsed.predicted_subtype || parsed.prediction?.predicted_subtype,
+          confidence: parsed.confidence ?? parsed.prediction?.confidence,
+          calibrated_probabilities: parsed.calibrated_probabilities || parsed.prediction?.calibrated_probabilities,
+          confidence_tier: parsed.confidence_tier || parsed.prediction?.confidence_tier,
           abstain: parsed.abstain ?? parsed.prediction?.abstain ?? false,
           abstain_reason: parsed.abstain_reason || parsed.prediction?.abstain_reason,
-          modalities_used: parsed.modalities_used || parsed.prediction?.modalities_used || ['RNA-seq', 'miRNA', 'Methylation'],
-          modality_weights: parsed.modality_weights || parsed.prediction?.modality_weights || { rna: 0.42, mirna: 0.31, meth: 0.27 },
+          modalities_used: parsed.modalities_used || parsed.prediction?.modalities_used || [],
+          modality_weights: parsed.modality_weights || parsed.prediction?.modality_weights,
           top_attributed_genes: parsed.top_attributed_genes || parsed.prediction?.top_attributed_genes || {},
           next_test_recommendations: parsed.next_test_recommendations || parsed.prediction?.next_test_recommendations || [],
           qc_summary: parsed.qc_summary,
-          model_version: parsed.model_version || 'BioNexus v1.0.0 (GraphGPS-Fused)',
-          preprocessing_version: parsed.preprocessing_version || 'v1.0.0',
-          timings_ms: parsed.timings_ms || parsed.prediction?.timings_ms || { total_inference_ms: 42.5 },
+          model_version: parsed.model_version || parsed.prediction?.model_version,
+          preprocessing_version: parsed.preprocessing_version || parsed.prediction?.preprocessing_version,
+          timings_ms: parsed.timings_ms || parsed.prediction?.timings_ms,
           disclaimer: parsed.disclaimer || 'Research use only, not a diagnostic device.',
           input_file_hashes: parsed.input_file_hashes || {},
         };
@@ -171,26 +165,20 @@ export function LiveCasePage() {
           patient_ref: String(data.patient_ref || id),
           created_at: String(data.created_at || new Date().toISOString()),
           specimen_type: String(data.specimen_type || 'primary_tumor'),
-          predicted_subtype: String(pred.predicted_subtype || data.predicted_subtype || 'LumA'),
-          confidence: Number(pred.confidence ?? data.confidence ?? 0.85),
-          calibrated_probabilities: (pred.calibrated_probabilities || data.calibrated_probabilities || {
-            LumA: 0.85,
-            LumB: 0.08,
-            Her2: 0.04,
-            Basal: 0.02,
-            Normal: 0.01,
-          }) as Record<string, number>,
-          confidence_tier: String(pred.confidence_tier || data.confidence_tier || 'high'),
+          predicted_subtype: pred.predicted_subtype || data.predicted_subtype,
+          confidence: typeof pred.confidence === 'number' ? pred.confidence : (typeof data.confidence === 'number' ? data.confidence : undefined),
+          calibrated_probabilities: pred.calibrated_probabilities || data.calibrated_probabilities,
+          confidence_tier: pred.confidence_tier || data.confidence_tier,
           abstain: Boolean(pred.abstain ?? data.abstain ?? false),
           abstain_reason: pred.abstain_reason || data.abstain_reason,
-          modalities_used: (pred.modalities_used || data.modalities_available || ['RNA-seq']) as string[],
-          modality_weights: (pred.modality_weights || data.modality_weights || { rna: 0.5, mirna: 0.3, meth: 0.2 }) as Record<string, number>,
+          modalities_used: (pred.modalities_used || data.modalities_available || []) as string[],
+          modality_weights: pred.modality_weights || data.modality_weights,
           top_attributed_genes: (pred.top_attributed_genes || data.top_attributed_genes || {}) as CaseDetails['top_attributed_genes'],
           next_test_recommendations: (pred.next_test_recommendations || data.next_test_recommendations || []) as CaseDetails['next_test_recommendations'],
           qc_summary: data.qc_summary as CaseDetails['qc_summary'],
-          model_version: String(pred.model_version || data.model_version || 'BioNexus v1.0.0'),
-          preprocessing_version: String(pred.preprocessing_version || 'v1.0.0'),
-          timings_ms: pred.timings_ms || { total_inference_ms: 38 },
+          model_version: pred.model_version || data.model_version,
+          preprocessing_version: pred.preprocessing_version || data.preprocessing_version,
+          timings_ms: pred.timings_ms || data.timings_ms,
           disclaimer: 'Research use only, not a diagnostic device.',
           input_file_hashes: (data.input_file_hashes || {}) as Record<string, string>,
         };
@@ -313,18 +301,21 @@ export function LiveCasePage() {
     );
   }
 
-  const subtypeStyle = SUBTYPE_COLORS[caseData.predicted_subtype || 'LumA'] || SUBTYPE_COLORS.LumA;
-  const confidencePct = Math.round((caseData.confidence ?? 0.85) * 100);
+  const subtypeStyle = (caseData.predicted_subtype && SUBTYPE_COLORS[caseData.predicted_subtype]) || SUBTYPE_COLORS.LumA;
+  const confidencePct = typeof caseData.confidence === 'number' ? Math.round(caseData.confidence * 100) : null;
 
   // Triage status calculation
   let triageStatus = 'Auto-report';
   let triageColor = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
-  if (caseData.abstain || (caseData.confidence ?? 0) < 0.6) {
+  if (caseData.abstain || (caseData.confidence != null && caseData.confidence < 0.6)) {
     triageStatus = 'Needs more data';
     triageColor = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
-  } else if ((caseData.confidence ?? 0) < 0.8) {
+  } else if (caseData.confidence != null && caseData.confidence < 0.8) {
     triageStatus = 'Clinician review';
     triageColor = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+  } else if (caseData.confidence == null) {
+    triageStatus = 'Pending';
+    triageColor = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
   }
 
   // Format attributed genes
@@ -433,7 +424,7 @@ export function LiveCasePage() {
                   <span
                     className={`inline-block px-3 py-1 rounded-lg text-lg font-bold border ${subtypeStyle.bg} ${subtypeStyle.text} ${subtypeStyle.border}`}
                   >
-                    {caseData.predicted_subtype}
+                    {caseData.predicted_subtype || 'Unclassified'}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500">PAM50 Consensus Call</p>
@@ -446,16 +437,18 @@ export function LiveCasePage() {
                 </span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-black font-mono text-slate-900 dark:text-white">
-                    {confidencePct}%
+                    {confidencePct != null ? `${confidencePct}%` : '—'}
                   </span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    Tier: {caseData.confidence_tier?.toUpperCase()}
-                  </span>
+                  {caseData.confidence_tier && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      Tier: {caseData.confidence_tier.toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${subtypeStyle.bar}`}
-                    style={{ width: `${confidencePct}%` }}
+                    style={{ width: `${confidencePct ?? 0}%` }}
                   />
                 </div>
               </div>
@@ -476,6 +469,8 @@ export function LiveCasePage() {
                     ? caseData.abstain_reason || 'Abstained due to high epistemic uncertainty'
                     : triageStatus === 'Auto-report'
                     ? 'Confidence ≥ 80% — eligible for auto-report'
+                    : triageStatus === 'Pending'
+                    ? 'Awaiting calibrated evaluation'
                     : 'Requires secondary pathologist or clinician review'}
                 </p>
               </div>
@@ -486,36 +481,42 @@ export function LiveCasePage() {
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Posterior Class Probability Distribution
               </span>
-              <div className="grid grid-cols-5 gap-2">
-                {['LumA', 'LumB', 'Her2', 'Basal', 'Normal'].map((st) => {
-                  const prob = (caseData.calibrated_probabilities?.[st] ?? 0) * 100;
-                  const isSelected = caseData.predicted_subtype === st;
-                  const style = SUBTYPE_COLORS[st];
-                  return (
-                    <div
-                      key={st}
-                      className={`p-2.5 rounded-xl border text-center transition-all ${
-                        isSelected
-                          ? `${style.bg} ${style.border} ring-2 ring-blue-500/20 shadow-sm`
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
-                      }`}
-                    >
-                      <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {st}
+              {caseData.calibrated_probabilities ? (
+                <div className="grid grid-cols-5 gap-2">
+                  {['LumA', 'LumB', 'Her2', 'Basal', 'Normal'].map((st) => {
+                    const prob = (caseData.calibrated_probabilities?.[st] ?? 0) * 100;
+                    const isSelected = caseData.predicted_subtype === st;
+                    const style = SUBTYPE_COLORS[st];
+                    return (
+                      <div
+                        key={st}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          isSelected
+                            ? `${style.bg} ${style.border} ring-2 ring-blue-500/20 shadow-sm`
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {st}
+                        </div>
+                        <div className="text-sm font-mono font-bold text-slate-900 dark:text-white mt-0.5">
+                          {prob.toFixed(1)}%
+                        </div>
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                          <div
+                            className={`h-full ${style.bar}`}
+                            style={{ width: `${Math.max(prob, 2)}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="text-sm font-mono font-bold text-slate-900 dark:text-white mt-0.5">
-                        {prob.toFixed(1)}%
-                      </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
-                        <div
-                          className={`h-full ${style.bar}`}
-                          style={{ width: `${Math.max(prob, 2)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 italic py-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl px-4 text-center">
+                  No posterior probabilities calculated for this case.
+                </p>
+              )}
             </div>
           </SectionCard>
 
@@ -609,25 +610,31 @@ export function LiveCasePage() {
               <p className="text-xs text-slate-500">
                 Learned cross-attention fusion weights reflecting each modality's contribution to the final latent representation:
               </p>
-              {Object.entries(caseData.modality_weights || { rna: 0.45, mirna: 0.3, meth: 0.25 }).map(
-                ([mod, weight]) => {
-                  const pct = Math.round(Number(weight) * 100);
-                  const label = mod === 'rna' ? 'RNA-seq' : mod === 'mirna' ? 'miRNA' : 'Methylation';
-                  return (
-                    <div key={mod} className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-slate-700 dark:text-slate-300">{label}</span>
-                        <span className="font-mono text-slate-900 dark:text-white">{pct}%</span>
+              {caseData.modality_weights && Object.keys(caseData.modality_weights).length > 0 ? (
+                Object.entries(caseData.modality_weights).map(
+                  ([mod, weight]) => {
+                    const pct = Math.round(Number(weight) * 100);
+                    const label = mod === 'rna' ? 'RNA-seq' : mod === 'mirna' ? 'miRNA' : 'Methylation';
+                    return (
+                      <div key={mod} className="space-y-1">
+                        <div className="flex justify-between text-xs font-semibold">
+                          <span className="text-slate-700 dark:text-slate-300">{label}</span>
+                          <span className="font-mono text-slate-900 dark:text-white">{pct}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                }
+                    );
+                  }
+                )
+              ) : (
+                <p className="text-xs text-slate-500 italic py-2">
+                  No cross-attention modality weights recorded for this case.
+                </p>
               )}
             </div>
           </SectionCard>
@@ -637,23 +644,27 @@ export function LiveCasePage() {
             <div className="space-y-3 text-xs">
               <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
                 <span className="text-slate-500">Overall Status:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {caseData.qc_summary?.overall_status || 'PASSED'}
+                <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                  {caseData.qc_summary?.overall_status === 'PASSED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                  {caseData.qc_summary?.overall_status || 'Not Evaluated'}
                 </span>
               </div>
 
               <div className="space-y-2">
                 <span className="text-slate-500 block">Modalities Analyzed:</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {(caseData.modalities_used || ['RNA-seq', 'miRNA', 'Methylation']).map((m) => (
-                    <span
-                      key={m}
-                      className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-mono font-medium"
-                    >
-                      {m}
-                    </span>
-                  ))}
+                  {caseData.modalities_used && caseData.modalities_used.length > 0 ? (
+                    caseData.modalities_used.map((m) => (
+                      <span
+                        key={m}
+                        className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-mono font-medium"
+                      >
+                        {m}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-slate-400 text-xs italic">None recorded</span>
+                  )}
                 </div>
               </div>
 

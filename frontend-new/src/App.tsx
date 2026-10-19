@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -49,11 +49,14 @@ function App() {
               <Route path="/model-insights" element={<ModelInsightsPage />} />
               <Route path="/model-comparison" element={<ModelComparisonPage />} />
               <Route path="/cost-accuracy" element={<CostAccuracyPage />} />
+              <Route path="/cost-vs-accuracy" element={<Navigate to="/cost-accuracy" replace />} />
               <Route path="/cohort-analysis" element={<CohortAnalysisPage />} />
               <Route path="/research" element={<ResearchPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/biomarkers" element={<BiomarkersPage />} />
               <Route path="/pathway-analysis" element={<PathwayAnalysisPage />} />
+              <Route path="/pathways" element={<Navigate to="/pathway-analysis" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
         </BrowserRouter>

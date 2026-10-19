@@ -66,7 +66,7 @@ export function DashboardPage() {
 
   // Patients State
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>('TCGA-AR-A1AR');
+  const [selectedPatientId, setSelectedPatientId] = useState<string>('TCGA-3C-AAAU');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   // Cohort & Metrics State
@@ -114,14 +114,9 @@ export function DashboardPage() {
       .then((pts) => {
         setPatients(pts);
         if (pts.length > 0) {
-          const found = pts.find((p) => p.id === 'TCGA-AR-A1AR');
-          if (found) {
-            setSelectedPatientId(found.id);
-            setSelectedPatient(found);
-          } else {
-            setSelectedPatientId(pts[0].id);
-            setSelectedPatient(pts[0]);
-          }
+          const found = pts.find((p) => p.id === 'TCGA-3C-AAAU') || pts[0];
+          setSelectedPatientId(found.id);
+          setSelectedPatient(found);
         }
       })
       .catch(console.error);

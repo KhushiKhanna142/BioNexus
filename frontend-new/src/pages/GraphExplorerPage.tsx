@@ -4,7 +4,7 @@ import { PatientGraphExplorer } from '@/components/PatientGraphExplorer';
 
 export function GraphExplorerPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedPatient = searchParams.get('patient') || 'TCGA-AR-A1AR';
+  const selectedPatient = searchParams.get('patient') || 'TCGA-3C-AAAU';
 
   const handleSelectPatient = (pid: string) => {
     setSearchParams({ patient: pid });

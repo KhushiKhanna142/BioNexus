@@ -120,7 +120,7 @@ export function TopBar({ title, subtitle, onSelectPatient }: TopBarProps) {
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Type a TCGA patient ID (e.g. TCGA-AR-A1AR)..."
+                  placeholder="Type a TCGA patient ID (e.g. TCGA-3C-AAAU)..."
                   className="flex-1 text-sm outline-none placeholder:text-slate-400 bg-transparent text-slate-800"
                   aria-label="Search patient ID"
                 />
