@@ -33,8 +33,12 @@ except ImportError:
     HAS_XGB = False
 
 # Import registry and data validation
-from model_comparison.data_source import parse_dataset
-from model_comparison.registry import MINORITY_CLASSES, PAM50_CLASSES
+try:
+    from bio_nexus.model_comparison.data_source import parse_dataset
+    from bio_nexus.model_comparison.registry import MINORITY_CLASSES, PAM50_CLASSES
+except ImportError:
+    from model_comparison.data_source import parse_dataset
+    from model_comparison.registry import MINORITY_CLASSES, PAM50_CLASSES
 
 
 def load_table(path_str: str) -> pd.DataFrame:
@@ -401,7 +405,7 @@ def main():
     print(f"  -> Accuracy: {eval_mlp['accuracy']:.4f} | Macro-F1: {eval_mlp['macro_f1']:.4f} | AUC: {eval_mlp['auc_roc']:.4f} | Train Time: {train_time_min}m | Latency: {inf_ms}ms")
 
     # 4. Integrate BioNexus Model (Step 3)
-    bionexus_spec_file = args.external or "bionexus_spec.json"
+    bionexus_spec_file = args.external or ("configs/bionexus_spec.json" if Path("configs/bionexus_spec.json").exists() else "bionexus_spec.json")
     if Path(bionexus_spec_file).exists():
         print(f"\n[Step 3] Integrating BioNexus from specification: {bionexus_spec_file}...")
         spec = json.loads(Path(bionexus_spec_file).read_text())

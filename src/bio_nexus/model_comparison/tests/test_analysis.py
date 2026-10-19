@@ -2,8 +2,12 @@ import json
 import unittest
 from pathlib import Path
 
-from model_comparison import analysis
-from model_comparison.data_source import DataValidationError, JsonFileSource, parse_dataset
+try:
+    from bio_nexus.model_comparison import analysis
+    from bio_nexus.model_comparison.data_source import DataValidationError, JsonFileSource, parse_dataset
+except ImportError:
+    from model_comparison import analysis
+    from model_comparison.data_source import DataValidationError, JsonFileSource, parse_dataset
 
 _SAMPLE_DATA = Path(__file__).parent.parent / "data" / "results.sample.json"
 DATA = _SAMPLE_DATA if _SAMPLE_DATA.exists() else Path(__file__).parent.parent / "data" / "results.json"

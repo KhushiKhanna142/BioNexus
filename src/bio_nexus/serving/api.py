@@ -163,8 +163,12 @@ app.include_router(v1_router)
 
 # Mount model comparison router
 try:
-    from model_comparison.data_source import default_source
-    from model_comparison.router import create_router
+    try:
+        from bio_nexus.model_comparison.data_source import default_source
+        from bio_nexus.model_comparison.router import create_router
+    except ImportError:
+        from model_comparison.data_source import default_source
+        from model_comparison.router import create_router
     app.include_router(create_router(default_source()))
 except Exception as exc:
     logger.warning("Could not mount model_comparison router: %s", exc)
