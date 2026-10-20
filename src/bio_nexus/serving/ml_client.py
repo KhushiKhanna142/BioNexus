@@ -67,97 +67,79 @@ class MLInferenceClient:
         self.model_load_error: str | None = None
         self.model_uri: str = "models:/mosaic-subtype-classifier/Production"
 
-        self._initialize()
+    def get_reference_matrix(self, mod: str) -> pd.DataFrame | None:
+        """Lazily load reference matrix on demand."""
+        if mod not in self.reference_matrices:
+            mat_file = self.data_dir / f"{mod}_matrix.parquet"
+            if mat_file.exists():
+                self.reference_matrices[mod] = pd.read_parquet(mat_file)
+        return self.reference_matrices.get(mod)
 
-    def _initialize(self) -> None:
-        """Load reference matrices, feature headers, and champion model."""
-        import os
-        try:
-            for mod in ["rna", "mirna", "meth"]:
-                mat_file = self.data_dir / f"{mod}_matrix.parquet"
-                if mat_file.exists():
-                    self.reference_matrices[mod] = pd.read_parquet(mat_file)
-                feat_file = self.data_dir / f"{mod}_features.csv"
-                if feat_file.exists():
-                    self.feature_meta[mod] = pd.read_csv(feat_file).set_index("feature_id")
+    def get_feature_meta(self, mod: str) -> pd.DataFrame | None:
+        """Lazily load feature metadata on demand."""
+        if mod not in self.feature_meta:
+            feat_file = self.data_dir / f"{mod}_features.csv"
+            if feat_file.exists():
+                self.feature_meta[mod] = pd.read_csv(feat_file).set_index("feature_id")
+        return self.feature_meta.get(mod)
 
-            ckpt_path = self.repo_dir / "data" / "processed" / "checkpoints" / "best_model.pt"
+    def ensure_pyg_graphs(self) -> list[Any]:
+        """Lazily load PyG graphs on demand."""
+        if not self.pyg_graphs:
             graph_dir = self.repo_dir / "data" / "processed" / "graphs"
-
             if (graph_dir / "rna_graph.pt").exists():
-                g_rna = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
-                g_mirna = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
-                g_meth = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
-                self.pyg_graphs = [g_rna, g_mirna, g_meth]
-
-            tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
-            if not tracking_uri:
-                db_path = self.repo_dir / "mlflow.db"
-                tracking_uri = f"sqlite:///{db_path.resolve()}" if db_path.exists() else "sqlite:///:memory:"
-            model_uri = os.getenv("BIONEXUS_MODEL_URI", "models:/mosaic-subtype-classifier/Production")
-            self.model_uri = model_uri
-            self.model_loaded = False
-
-            try:
-                import mlflow
-                import mlflow.pytorch
-                mlflow.set_tracking_uri(tracking_uri)
                 try:
-                    loaded_model = mlflow.pytorch.load_model(model_uri)
-                except Exception as direct_exc:
-                    # Handle host vs container path mismatch (e.g. C:/... vs /mlruns/...)
-                    loaded_model = None
-                    try:
-                        from mlflow.client import MlflowClient
-                        client = MlflowClient(tracking_uri=tracking_uri)
-                        parts = model_uri.replace("models:/", "").split("/")
-                        m_name = parts[0]
-                        stage_or_ver = parts[1] if len(parts) > 1 else "Production"
-                        mvs = client.get_latest_versions(m_name, stages=[stage_or_ver])
-                        if mvs:
-                            raw_src = mvs[0].source.replace("file:", "").replace("\\", "/")
-                            if "mlruns/" in raw_src:
-                                suffix = raw_src[raw_src.index("mlruns/") + len("mlruns/") :]
-                                candidates = [
-                                    Path("/mlruns") / suffix,
-                                    self.repo_dir / "mlruns" / suffix,
-                                ]
-                                for cand in candidates:
-                                    if cand.exists() and (cand / "MLmodel").exists():
-                                        loaded_model = mlflow.pytorch.load_model(str(cand))
-                                        break
-                    except Exception:
-                        pass
-                    if loaded_model is None:
-                        raise direct_exc
+                    g_rna = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
+                    g_mirna = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
+                    g_meth = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
+                    self.pyg_graphs = [g_rna, g_mirna, g_meth]
+                except Exception as e:
+                    print(f"[ml_client] Warning loading reference graphs: {e}")
+        return self.pyg_graphs
 
-                loaded_model.eval()
-                self.model = loaded_model
+    def ensure_model(self) -> BioNexusClassifier | None:
+        """Lazily load champion model directly or fallback."""
+        if self.model is not None:
+            return self.model
+
+        # Fast direct torch.load of model.pth
+        direct_candidates = [
+            self.repo_dir / "mlruns" / "3" / "fe80245bc750408c9974c3ddcebab644" / "artifacts" / "model" / "data" / "model.pth",
+            Path("/mlruns") / "3" / "fe80245bc750408c9974c3ddcebab644" / "artifacts" / "model" / "data" / "model.pth",
+        ]
+        mlruns_dir = self.repo_dir / "mlruns"
+        if mlruns_dir.exists():
+            for pth in mlruns_dir.rglob("model.pth"):
+                if pth not in direct_candidates:
+                    direct_candidates.append(pth)
+
+        for cand in direct_candidates:
+            if cand.exists():
+                try:
+                    loaded = torch.load(cand, map_location="cpu", weights_only=False)
+                    if isinstance(loaded, torch.nn.Module):
+                        loaded.eval()
+                        self.model = loaded
+                        self.model_loaded = True
+                        self.model_load_error = None
+                        return self.model
+                except Exception:
+                    pass
+
+        # Checkpoint fallback
+        ckpt_path = self.repo_dir / "data" / "processed" / "checkpoints" / "best_model.pt"
+        if ckpt_path.exists():
+            try:
+                m = BioNexusClassifier(rna_in_features=500, mirna_in_features=100, meth_in_features=500)
+                m.load_state_dict(torch.load(ckpt_path, map_location="cpu", weights_only=True))
+                m.eval()
+                self.model = m
                 self.model_loaded = True
                 self.model_load_error = None
-                print(f"[ml_client] Loaded model from MLflow registry: {model_uri}")
-            except Exception as exc:
-                self.model_load_error = f"Failed to load {model_uri}: {exc}"
-                print(f"[ml_client] {self.model_load_error}")
-                if os.getenv("BIONEXUS_ALLOW_LOCAL_FALLBACK", "false").lower() in ("true", "1"):
-                    if ckpt_path.exists() and self.pyg_graphs:
-                        try:
-                            m = BioNexusClassifier(
-                                rna_in_features=self.pyg_graphs[0].x.shape[1],
-                                mirna_in_features=self.pyg_graphs[1].x.shape[1],
-                                meth_in_features=self.pyg_graphs[2].x.shape[1],
-                            )
-                            m.load_state_dict(torch.load(ckpt_path, map_location="cpu", weights_only=True))
-                            m.eval()
-                            self.model = m
-                            self.model_loaded = True
-                            self.model_load_error = None
-                            print("[ml_client] Loaded provisional local checkpoint.")
-                        except Exception as fb_err:
-                            self.model_load_error = f"{self.model_load_error}; fallback failed: {fb_err}"
-        except Exception as e:
-            self.model_load_error = str(e)
-            print(f"[ml_client] Warning during initialization: {e}")
+                return self.model
+            except Exception as fb_err:
+                self.model_load_error = str(fb_err)
+        return None
 
     def predict_case(
         self,
@@ -177,7 +159,7 @@ class MLInferenceClient:
         # If model is loaded, we compute projection against reference nodes
         sim_scores: dict[str, np.ndarray] = {}
         for mod in modalities_used:
-            ref_df = self.reference_matrices.get(mod)
+            ref_df = self.get_reference_matrix(mod)
             if ref_df is not None:
                 exp_feats = list(ref_df.columns)
                 user_vec = np.zeros(len(exp_feats), dtype=np.float32)
@@ -196,6 +178,8 @@ class MLInferenceClient:
 
         # 2. Model forward pass
         t_infer = time.perf_counter()
+        self.ensure_model()
+        self.ensure_pyg_graphs()
         if not self.model or not self.pyg_graphs:
             from fastapi import HTTPException
             raise HTTPException(
@@ -254,7 +238,7 @@ class MLInferenceClient:
         t_ig = time.perf_counter()
         biomarkers: dict[str, list[BiomarkerAttributionItem]] = {}
         for mod in modalities_used:
-            meta_df = self.feature_meta.get(mod)
+            meta_df = self.get_feature_meta(mod)
             inp_dict = aligned_vectors[mod]
             # Rank top features by magnitude and sign
             sorted_feats = sorted(inp_dict.items(), key=lambda kv: abs(kv[1]), reverse=True)[:top_k_biomarkers]

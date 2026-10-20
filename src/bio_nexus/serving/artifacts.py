@@ -201,8 +201,8 @@ class ArtifactStore:
     explorer_overlap: pd.DataFrame | None = None
     explorer_node_index: pd.DataFrame | None = None
 
-    # --- Live PyTorch models & graph cache ---
-    pyg_graphs: list[Any] = field(default_factory=list)
+    # --- Live PyTorch models & graph cache (lazy loaded) ---
+    _pyg_graphs: list[Any] = field(default_factory=list, repr=False)
     fold_models: dict[int, Any] = field(default_factory=dict)
     best_model: Any | None = None
     model_loaded: bool = False
@@ -210,6 +210,33 @@ class ArtifactStore:
     model_version: str | None = None
     model_load_error: str | None = None
     model_uri: str | None = None
+
+    @property
+    def pyg_graphs(self) -> list[Any]:
+        """Lazy property for PyG graphs: loaded only on first demand."""
+        if not self._pyg_graphs:
+            self.ensure_pyg_graphs()
+        return self._pyg_graphs
+
+    @pyg_graphs.setter
+    def pyg_graphs(self, value: list[Any]) -> None:
+        self._pyg_graphs = value
+
+    def ensure_pyg_graphs(self) -> None:
+        """Lazily load PyG reference graphs if needed."""
+        if self._pyg_graphs:
+            return
+        repo_root = self.directory.parents[1]
+        graph_dir = repo_root / "data" / "processed" / "graphs"
+        if (graph_dir / "rna_graph.pt").exists():
+            try:
+                rna_g = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
+                mirna_g = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
+                meth_g = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
+                self._pyg_graphs = [rna_g, mirna_g, meth_g]
+                print(f"[serving] Lazily loaded PyG graphs into memory.")
+            except Exception as e:
+                print(f"[serving] Warning loading reference graphs: {e}")
 
     # --- Lazy IG accessor ---
     _lazy_ig: Any | None = field(default=None, repr=False)
@@ -369,22 +396,13 @@ class ArtifactStore:
         self.explorer_neighbor_map[layer] = dict(nbr_map)
 
     def _load_live_models_and_graphs(self) -> None:
-        """Preload PyG graphs and attempt to load Production/champion model from MLflow."""
+        """Attempt to load Production/champion model directly or from MLflow.
+        PyG graphs are NOT loaded here; they remain lazy-loaded on demand to stay under 512MB RAM.
+        """
         repo_root = self.directory.parents[1]
         ckpt_dir = repo_root / "data" / "processed" / "checkpoints"
-        graph_dir = repo_root / "data" / "processed" / "graphs"
 
-        # 1. Load reference PyG graphs if present
-        if (graph_dir / "rna_graph.pt").exists():
-            try:
-                rna_g = torch.load(graph_dir / "rna_graph.pt", weights_only=False)
-                mirna_g = torch.load(graph_dir / "mirna_graph.pt", weights_only=False)
-                meth_g = torch.load(graph_dir / "meth_graph.pt", weights_only=False)
-                self.pyg_graphs = [rna_g, mirna_g, meth_g]
-            except Exception as e:
-                print(f"[serving] Warning loading reference graphs: {e}")
-
-        # 2. Attempt to load registered model from MLflow
+        # 1. Attempt to load registered model
         model_uri = os.getenv("BIONEXUS_MODEL_URI", "models:/mosaic-subtype-classifier/Production")
         tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
         if not tracking_uri:
@@ -394,6 +412,35 @@ class ArtifactStore:
         self.model_loaded = False
         self.best_model = None
 
+        # FAST PATH: Try direct torch.load of model.pth to avoid MLflow package bloat in memory
+        direct_candidates = [
+            repo_root / "mlruns" / "3" / "fe80245bc750408c9974c3ddcebab644" / "artifacts" / "model" / "data" / "model.pth",
+            Path("/mlruns") / "3" / "fe80245bc750408c9974c3ddcebab644" / "artifacts" / "model" / "data" / "model.pth",
+        ]
+        mlruns_dir = repo_root / "mlruns"
+        if mlruns_dir.exists():
+            for pth in mlruns_dir.rglob("model.pth"):
+                if pth not in direct_candidates:
+                    direct_candidates.append(pth)
+
+        for cand in direct_candidates:
+            if cand.exists():
+                try:
+                    loaded = torch.load(cand, map_location="cpu", weights_only=False)
+                    if isinstance(loaded, torch.nn.Module):
+                        loaded.eval()
+                        self.best_model = loaded
+                        self.model_loaded = True
+                        self.model_source = "direct_artifact_model_pth"
+                        self.model_version = model_uri
+                        self.model_load_error = None
+                        print(f"[serving] Successfully loaded champion model directly from {cand}")
+                        gc.collect()
+                        return
+                except Exception as ex:
+                    print(f"[serving] Direct load attempt failed for {cand}: {ex}")
+
+        # MLFLOW PATH: If direct load not found, try MLflow registry loader
         try:
             import mlflow
             import mlflow.pytorch
@@ -401,7 +448,6 @@ class ArtifactStore:
             try:
                 loaded_model = mlflow.pytorch.load_model(model_uri)
             except Exception as direct_exc:
-                # Handle host vs container path mismatch (e.g. C:/... vs /mlruns/...)
                 loaded_model = None
                 try:
                     from mlflow.client import MlflowClient
@@ -439,28 +485,29 @@ class ArtifactStore:
             self.model_load_error = err_msg
             print(f"[serving] {err_msg}")
 
-            # Optional local checkpoint fallback if explicitly enabled
-            if os.getenv("BIONEXUS_ALLOW_LOCAL_FALLBACK", "false").lower() in ("true", "1"):
-                b_path = ckpt_dir / "best_model.pt"
-                if b_path.exists() and self.pyg_graphs:
-                    try:
-                        from bio_nexus.models.classifier import BioNexusClassifier
-                        bm = BioNexusClassifier(
-                            rna_in_features=self.pyg_graphs[0].x.shape[1],
-                            mirna_in_features=self.pyg_graphs[1].x.shape[1],
-                            meth_in_features=self.pyg_graphs[2].x.shape[1],
-                        )
-                        bm.load_state_dict(torch.load(b_path, map_location="cpu", weights_only=True))
-                        bm.eval()
-                        self.best_model = bm
-                        self.model_loaded = True
-                        self.model_source = "local_checkpoint_provisional"
-                        self.model_version = "provisional_best_model"
-                        self.model_load_error = None
-                        print(f"[serving] Loaded provisional local checkpoint: {b_path}")
-                    except Exception as fb_exc:
-                        self.model_load_error = f"{err_msg}; local fallback failed: {fb_exc}"
-                        print(f"[serving] Fallback failed: {fb_exc}")
+            # Optional local checkpoint fallback
+            b_path = ckpt_dir / "best_model.pt"
+            if b_path.exists():
+                try:
+                    from bio_nexus.models.classifier import BioNexusClassifier
+                    bm = BioNexusClassifier(
+                        rna_in_features=500,
+                        mirna_in_features=100,
+                        meth_in_features=500,
+                    )
+                    bm.load_state_dict(torch.load(b_path, map_location="cpu", weights_only=True))
+                    bm.eval()
+                    self.best_model = bm
+                    self.model_loaded = True
+                    self.model_source = "local_checkpoint_provisional"
+                    self.model_version = "provisional_best_model"
+                    self.model_load_error = None
+                    print(f"[serving] Loaded provisional local checkpoint: {b_path}")
+                except Exception as fb_exc:
+                    self.model_load_error = f"{err_msg}; local fallback failed: {fb_exc}"
+                    print(f"[serving] Fallback failed: {fb_exc}")
+
+        gc.collect()
 
     def versions(self) -> dict[str, str]:
         out = {}

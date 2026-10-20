@@ -1728,6 +1728,10 @@ def verify_patient_merkle_proof(patient_id: str):
 
 
 
+import gc
+gc.collect()
+
+
 if __name__ == "__main__":
     import uvicorn
 
