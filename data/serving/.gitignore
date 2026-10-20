@@ -1,6 +1,1 @@
-/rna_matrix.parquet
-/rna_matrix_zscore.parquet
-/meth_matrix.parquet
-/meth_matrix_zscore.parquet
-/mirna_matrix.parquet
-/mirna_matrix_zscore.parquet
+# Empty .gitignore to allow tracking essential serving parquet matrices for cloud deployment
