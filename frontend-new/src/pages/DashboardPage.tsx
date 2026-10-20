@@ -528,35 +528,41 @@ export function DashboardPage() {
               {prediction ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Left: Main Predicted Subtype Display */}
-                  <div className="space-y-2">
-                    <div className="text-[11px] font-medium text-slate-400">Predicted Subtype</div>
-                    <div className="flex items-baseline gap-2">
-                      <span className={`text-3xl font-extrabold ${theme.text}`}>
+                  <div className="space-y-2.5 min-w-0">
+                    <div>
+                      <div className="text-[11px] font-medium text-slate-400">Predicted Subtype</div>
+                      <div className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${theme.text} truncate`}>
                         {prediction.predicted_subtype}
-                      </span>
-                      <span className="text-xs text-slate-400 font-medium">Confidence</span>
-                      <span className="text-sm font-bold text-slate-800">
-                        {(prediction.confidence * 100).toFixed(1)}%
-                      </span>
+                      </div>
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden mt-1">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.round(prediction.confidence * 100)}%`,
-                          backgroundColor: theme.hex,
-                        }}
-                      />
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-[11px] font-medium text-slate-400">Confidence</span>
+                        <span className="text-xs font-bold text-slate-800 font-mono">
+                          {(prediction.confidence * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      {/* Progress Bar */}
+                      <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.round(prediction.confidence * 100)}%`,
+                            backgroundColor: theme.hex,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed mt-2.5">
+
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
                       {theme.desc}
                     </p>
                     {prediction.true_pam50 && (
-                      <div className="mt-2 text-xs font-medium text-slate-700">
-                        True Subtype: <span className="font-bold">{prediction.true_pam50}</span>
-                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      <div className="text-xs font-medium text-slate-700 flex items-center flex-wrap gap-1.5 pt-0.5">
+                        <span className="text-slate-400 text-[11px]">True:</span>
+                        <span className="font-bold">{prediction.true_pam50}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                           prediction.match ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
                         }`}>
                           {prediction.match ? 'Match' : 'Mismatch'}
@@ -566,7 +572,7 @@ export function DashboardPage() {
                   </div>
 
                   {/* Right: Subtype Probabilities Breakdown */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0">
                     <div className="text-[11px] font-medium text-slate-400">Subtype Probabilities</div>
                     <div className="space-y-1.5">
                       {(['LumA', 'LumB', 'Her2', 'Basal', 'Normal'] as PAM50Subtype[]).map((name) => {
