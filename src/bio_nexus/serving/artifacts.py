@@ -1,11 +1,18 @@
 """Load precomputed serving artifacts from data/serving/.
 Zero random/synthetic generators.
 Strictly traces to real BioNexus artifacts.
+
+Memory-optimised for Render free tier (512 MB RAM):
+  - Only lightweight JSON/CSV metadata is loaded at startup (~5 MB).
+  - All heavy parquet matrices, edges, features, embeddings and IG
+    attributions are lazy-loaded on first access via LazyParquet / LazyDict.
 """
 
 from __future__ import annotations
 
+import gc
 import json
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -47,7 +54,6 @@ LAYER_FILE = {"rna": "rna", "mirna": "mirna", "meth": "meth", "methylation": "me
 
 
 def serving_dir(base_dir: Path) -> Path:
-    import os
     raw = os.getenv("BIONEXUS_SERVING_DIR")
     if raw:
         return Path(raw)
@@ -66,9 +72,71 @@ def list_optional_missing(directory: Path) -> list[str]:
     return [str(directory / n) for n in OPTIONAL_FILES if not (directory / n).exists()]
 
 
+# ---------------------------------------------------------------------------
+# Lazy-loading helpers – keeps startup RAM < 50 MB
+# ---------------------------------------------------------------------------
+
+class LazyParquet:
+    """Reads a parquet file on first access and caches the DataFrame."""
+    def __init__(self, path: Path, *, dtype: np.dtype | None = np.float32):
+        self._path = path
+        self._dtype = dtype
+        self._df: pd.DataFrame | None = None
+
+    def get(self) -> pd.DataFrame:
+        if self._df is None:
+            df = pd.read_parquet(self._path)
+            if self._dtype is not None:
+                try:
+                    df = df.astype(self._dtype)
+                except (ValueError, TypeError):
+                    pass
+            self._df = df
+        return self._df
+
+    def loaded(self) -> bool:
+        return self._df is not None
+
+
+class LazyDict(dict):
+    """Dict whose values are LazyParquet / LazyCSV; transparently loads on __getitem__."""
+    def __getitem__(self, key: str) -> pd.DataFrame:
+        val = super().__getitem__(key)
+        if isinstance(val, LazyParquet):
+            df = val.get()
+            super().__setitem__(key, df)       # cache so next access is instant
+            return df
+        return val
+
+    def __contains__(self, key: object) -> bool:
+        return super().__contains__(key)
+
+
+class LazyCSV:
+    def __init__(self, path: Path):
+        self._path = path
+        self._df: pd.DataFrame | None = None
+    def get(self) -> pd.DataFrame:
+        if self._df is None:
+            self._df = pd.read_csv(self._path)
+        return self._df
+    def loaded(self) -> bool:
+        return self._df is not None
+
+
+class LazyCSVDict(dict):
+    def __getitem__(self, key: str) -> pd.DataFrame:
+        val = super().__getitem__(key)
+        if isinstance(val, LazyCSV):
+            df = val.get()
+            super().__setitem__(key, df)
+            return df
+        return val
+
+
 class LazyZscoreDict(dict):
-    """Memory-efficient lazy dictionary that computes z-score matrices on demand rather than at startup."""
-    def __init__(self, matrices: dict[str, pd.DataFrame], directory: Path):
+    """Computes z-score matrices on demand from the raw matrices dict."""
+    def __init__(self, matrices: LazyDict, directory: Path):
         super().__init__()
         self._matrices = matrices
         self._directory = directory
@@ -94,6 +162,10 @@ class LazyZscoreDict(dict):
             return self[key]
         return default
 
+
+# ---------------------------------------------------------------------------
+# ArtifactStore
+# ---------------------------------------------------------------------------
 
 @dataclass
 class ArtifactStore:
@@ -139,8 +211,23 @@ class ArtifactStore:
     model_load_error: str | None = None
     model_uri: str | None = None
 
+    # --- Lazy IG accessor ---
+    _lazy_ig: Any | None = field(default=None, repr=False)
+
+    @property
+    def ig_data(self) -> pd.DataFrame | None:
+        """Lazy accessor for ig attributions."""
+        if self.ig is not None:
+            return self.ig
+        if self._lazy_ig is not None and isinstance(self._lazy_ig, LazyParquet):
+            if self._lazy_ig._path.exists():
+                self.ig = self._lazy_ig.get()
+                return self.ig
+        return None
+
     @classmethod
     def load(cls, directory: Path, preload_models: bool = True) -> ArtifactStore:
+        # --- Lightweight metadata (< 5 MB total) ---
         patients = pd.read_csv(directory / "patients.csv")
         oof = pd.read_parquet(directory / "oof_predictions.parquet")
         labels = json.loads((directory / "labels.json").read_text())
@@ -152,21 +239,23 @@ class ArtifactStore:
         if (directory / "manifest.json").exists():
             manifest = json.loads((directory / "manifest.json").read_text())
 
-        edges = {
-            layer: pd.read_parquet(directory / f"{layer}_graph_edges.parquet")
+        # --- Heavy data: ALL lazy-loaded ---
+        edges = LazyDict({
+            layer: LazyParquet(directory / f"{layer}_graph_edges.parquet", dtype=None)
             for layer in ("rna", "mirna", "meth")
-        }
-        matrices = {
-            layer: pd.read_parquet(directory / f"{layer}_matrix.parquet").astype(np.float32)
+        })
+        matrices = LazyDict({
+            layer: LazyParquet(directory / f"{layer}_matrix.parquet", dtype=np.float32)
             for layer in ("rna", "mirna", "meth")
-        }
+        })
         zscore_matrices = LazyZscoreDict(matrices, directory)
 
-        features = {
-            layer: pd.read_csv(directory / f"{layer}_features.csv")
+        features = LazyCSVDict({
+            layer: LazyCSV(directory / f"{layer}_features.csv")
             for layer in ("rna", "mirna", "meth")
-        }
+        })
 
+        # Embeddings (small, ~89 KB) – load eagerly, needed by dashboard
         embeddings_2d = None
         if (directory / "embeddings_2d.parquet").exists():
             embeddings_2d = pd.read_parquet(directory / "embeddings_2d.parquet")
@@ -175,10 +264,11 @@ class ArtifactStore:
         if (directory / "survival.json").exists():
             survival = json.loads((directory / "survival.json").read_text())
 
-        ig = None
+        # IG attributions – lazy
+        lazy_ig = None
         ig_path = directory / "ig_attributions.parquet"
         if ig_path.exists():
-            ig = pd.read_parquet(ig_path)
+            lazy_ig = LazyParquet(ig_path, dtype=None)
 
         causal = None
         causal_path = directory / "causal_validation.json"
@@ -207,13 +297,14 @@ class ArtifactStore:
             features=features,
             embeddings_2d=embeddings_2d,
             survival=survival,
-            ig=ig,
+            ig=None,
             causal=causal,
             fusion_diagnosis=fusion,
             patient_index=idx,
+            _lazy_ig=lazy_ig,
         )
 
-        # Clinical
+        # Clinical (small CSV, ~92 KB)
         clin_path = directory / "patient_clinical.csv"
         if clin_path.exists():
             store.clinical = pd.read_csv(clin_path)
@@ -222,21 +313,20 @@ class ArtifactStore:
                 for _, row in store.clinical.iterrows()
             }
 
-        # Graph explorer
+        # Graph explorer – lazy (don't build neighbor maps at startup)
         graphs_dir = directory / "graphs"
         if graphs_dir.is_dir():
-            store._load_explorer_artifacts(graphs_dir)
+            store._load_explorer_metadata(graphs_dir)
 
         # Preload PyTorch models & graphs for live endpoints
         if preload_models:
             store._load_live_models_and_graphs()
 
-        import gc
         gc.collect()
-
         return store
 
-    def _load_explorer_artifacts(self, graphs_dir: Path) -> None:
+    def _load_explorer_metadata(self, graphs_dir: Path) -> None:
+        """Load only lightweight explorer metadata; neighbor maps are built lazily."""
         stats_path = graphs_dir / "graph_stats.json"
         if stats_path.exists():
             self.explorer_graph_stats = json.loads(stats_path.read_text())
@@ -249,28 +339,37 @@ class ArtifactStore:
         if overlap_path.exists():
             self.explorer_overlap = pd.read_parquet(overlap_path)
 
-        for layer in ("rna", "mirna", "meth"):
-            edge_path = graphs_dir / f"{layer}_edges.parquet"
-            if edge_path.exists():
-                df = pd.read_parquet(edge_path)
-                self.explorer_edges[layer] = df
-                nbr_map: dict[int, list[tuple[int, float, bool]]] = defaultdict(list)
-                srcs = df["src_idx"].to_numpy(dtype=int)
-                dsts = df["dst_idx"].to_numpy(dtype=int)
-                sims = df["cosine_similarity"].to_numpy(dtype=float)
-                if "directed_knn_flag" in df.columns:
-                    flags = df["directed_knn_flag"].to_numpy(dtype=bool)
-                elif "is_direct_knn" in df.columns:
-                    flags = df["is_direct_knn"].to_numpy(dtype=bool)
-                else:
-                    flags = np.zeros(len(df), dtype=bool)
-                for s, d, c, f in zip(srcs, dsts, sims, flags):
-                    nbr_map[s].append((d, float(c), bool(f)))
-                self.explorer_neighbor_map[layer] = dict(nbr_map)
+        # Store paths for lazy edge loading
+        self._explorer_graphs_dir = graphs_dir
+
+    def ensure_explorer_edges(self, layer: str) -> None:
+        """Lazily load explorer edges and build neighbor map for a specific layer."""
+        if layer in self.explorer_neighbor_map:
+            return
+        graphs_dir = getattr(self, "_explorer_graphs_dir", None)
+        if graphs_dir is None:
+            return
+        edge_path = graphs_dir / f"{layer}_edges.parquet"
+        if not edge_path.exists():
+            return
+        df = pd.read_parquet(edge_path)
+        self.explorer_edges[layer] = df
+        nbr_map: dict[int, list[tuple[int, float, bool]]] = defaultdict(list)
+        srcs = df["src_idx"].to_numpy(dtype=int)
+        dsts = df["dst_idx"].to_numpy(dtype=int)
+        sims = df["cosine_similarity"].to_numpy(dtype=float)
+        if "directed_knn_flag" in df.columns:
+            flags = df["directed_knn_flag"].to_numpy(dtype=bool)
+        elif "is_direct_knn" in df.columns:
+            flags = df["is_direct_knn"].to_numpy(dtype=bool)
+        else:
+            flags = np.zeros(len(df), dtype=bool)
+        for s, d, c, f in zip(srcs, dsts, sims, flags):
+            nbr_map[s].append((d, float(c), bool(f)))
+        self.explorer_neighbor_map[layer] = dict(nbr_map)
 
     def _load_live_models_and_graphs(self) -> None:
         """Preload PyG graphs and attempt to load Production/champion model from MLflow."""
-        import os
         repo_root = self.directory.parents[1]
         ckpt_dir = repo_root / "data" / "processed" / "checkpoints"
         graph_dir = repo_root / "data" / "processed" / "graphs"

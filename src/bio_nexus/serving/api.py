@@ -585,8 +585,9 @@ def explain(
         raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
 
     # 1. Try precomputed attributions
-    if store.ig is not None:
-        sub = store.ig[(store.ig["patient_id"] == patient_id) & (store.ig["layer"] == key)]
+    ig_df = store.ig_data
+    if ig_df is not None:
+        sub = ig_df[(ig_df["patient_id"] == patient_id) & (ig_df["layer"] == key)]
         if not sub.empty:
             sorted_sub = sub.reindex(sub["attribution"].abs().sort_values(ascending=False).index).head(top_k)
             biomarkers = [
@@ -786,6 +787,7 @@ def _build_patient_ego_graph(
 ) -> PatientEgoGraphResponse:
     if key not in ("rna", "mirna", "meth"):
         raise HTTPException(status_code=422, detail={"error": "invalid_layer", "detail": key})
+    store.ensure_explorer_edges(key)
     if key not in store.explorer_edges or not store.explorer_neighbor_map.get(key):
         raise HTTPException(status_code=503, detail={"error": "artifacts_missing"})
     if patient_id not in store.patient_index:
@@ -931,6 +933,8 @@ def _build_patient_ego_graph(
         u_meth, v_meth = meth_mat[center_idx : center_idx + 1], meth_mat[v : v + 1]
         s_meth = float(cosine_similarity(u_meth, v_meth)[0, 0])
 
+        for _lyr in ("rna", "mirna", "meth"):
+            store.ensure_explorer_edges(_lyr)
         in_rna = any(nbr == v for nbr, _, _ in store.explorer_neighbor_map.get("rna", {}).get(center_idx, []))
         in_mirna = any(nbr == v for nbr, _, _ in store.explorer_neighbor_map.get("mirna", {}).get(center_idx, []))
         in_meth = any(nbr == v for nbr, _, _ in store.explorer_neighbor_map.get("meth", {}).get(center_idx, []))
@@ -1069,6 +1073,8 @@ def patient_graph_compare(patient_id: str):
     store = _require_store()
     if patient_id not in store.patient_index:
         raise HTTPException(status_code=404, detail={"error": "patient_not_found"})
+    for _lyr in ("rna", "mirna", "meth"):
+        store.ensure_explorer_edges(_lyr)
     if not store.explorer_neighbor_map or not all(k in store.explorer_neighbor_map for k in ("rna", "mirna", "meth")):
         raise HTTPException(status_code=503, detail={"error": "artifacts_missing"})
 
