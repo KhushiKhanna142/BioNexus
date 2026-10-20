@@ -24,7 +24,7 @@ dependencies = [
     "reportlab>=4.0.0",
     "web3>=6.0.0",
     "eth-account>=0.11.0",
-    "hexbytes>=1.0.0",
+    "hexbytes>=0.1.0",
     "cryptography>=42.0.0",
 ]
 
