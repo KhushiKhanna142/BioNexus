@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import torch
 
@@ -63,6 +64,35 @@ def list_missing(directory: Path) -> list[str]:
 
 def list_optional_missing(directory: Path) -> list[str]:
     return [str(directory / n) for n in OPTIONAL_FILES if not (directory / n).exists()]
+
+
+class LazyZscoreDict(dict):
+    """Memory-efficient lazy dictionary that computes z-score matrices on demand rather than at startup."""
+    def __init__(self, matrices: dict[str, pd.DataFrame], directory: Path):
+        super().__init__()
+        self._matrices = matrices
+        self._directory = directory
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._matrices
+
+    def __getitem__(self, key: str) -> pd.DataFrame:
+        if key not in self._matrices:
+            raise KeyError(key)
+        if key not in self.keys():
+            z_path = self._directory / f"{key}_matrix_zscore.parquet"
+            if z_path.exists():
+                super().__setitem__(key, pd.read_parquet(z_path).astype(np.float32))
+            else:
+                m = self._matrices[key]
+                computed = ((m - m.mean(axis=0)) / m.std(axis=0).replace(0, 1.0)).astype(np.float32)
+                super().__setitem__(key, computed)
+        return super().__getitem__(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if key in self:
+            return self[key]
+        return default
 
 
 @dataclass
@@ -127,18 +157,10 @@ class ArtifactStore:
             for layer in ("rna", "mirna", "meth")
         }
         matrices = {
-            layer: pd.read_parquet(directory / f"{layer}_matrix.parquet")
+            layer: pd.read_parquet(directory / f"{layer}_matrix.parquet").astype(np.float32)
             for layer in ("rna", "mirna", "meth")
         }
-        zscore_matrices = {}
-        for layer in ("rna", "mirna", "meth"):
-            z_path = directory / f"{layer}_matrix_zscore.parquet"
-            if z_path.exists():
-                zscore_matrices[layer] = pd.read_parquet(z_path)
-            else:
-                # Compute on the fly if missing
-                m = matrices[layer]
-                zscore_matrices[layer] = (m - m.mean(axis=0)) / m.std(axis=0).replace(0, 1.0)
+        zscore_matrices = LazyZscoreDict(matrices, directory)
 
         features = {
             layer: pd.read_csv(directory / f"{layer}_features.csv")
@@ -208,6 +230,9 @@ class ArtifactStore:
         # Preload PyTorch models & graphs for live endpoints
         store._load_live_models_and_graphs()
 
+        import gc
+        gc.collect()
+
         return store
 
     def _load_explorer_artifacts(self, graphs_dir: Path) -> None:
@@ -229,11 +254,17 @@ class ArtifactStore:
                 df = pd.read_parquet(edge_path)
                 self.explorer_edges[layer] = df
                 nbr_map: dict[int, list[tuple[int, float, bool]]] = defaultdict(list)
-                for _, row in df.iterrows():
-                    flag = bool(row.get("directed_knn_flag", row.get("is_direct_knn", False)))
-                    nbr_map[int(row["src_idx"])].append(
-                        (int(row["dst_idx"]), float(row["cosine_similarity"]), flag)
-                    )
+                srcs = df["src_idx"].to_numpy(dtype=int)
+                dsts = df["dst_idx"].to_numpy(dtype=int)
+                sims = df["cosine_similarity"].to_numpy(dtype=float)
+                if "directed_knn_flag" in df.columns:
+                    flags = df["directed_knn_flag"].to_numpy(dtype=bool)
+                elif "is_direct_knn" in df.columns:
+                    flags = df["is_direct_knn"].to_numpy(dtype=bool)
+                else:
+                    flags = np.zeros(len(df), dtype=bool)
+                for s, d, c, f in zip(srcs, dsts, sims, flags):
+                    nbr_map[s].append((d, float(c), bool(f)))
                 self.explorer_neighbor_map[layer] = dict(nbr_map)
 
     def _load_live_models_and_graphs(self) -> None:
