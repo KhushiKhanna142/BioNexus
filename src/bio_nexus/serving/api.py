@@ -501,14 +501,17 @@ def profile(
         raise HTTPException(status_code=404, detail={"error": "patient_not_found", "detail": patient_id})
 
     vec = store.matrices[key].loc[patient_id]
-    zvec = store.zscore_matrices[key].loc[patient_id] if key in store.zscore_matrices else None
+    v_mean = float(vec.mean())
+    v_std = float(vec.std())
+    if v_std == 0:
+        v_std = 1.0
     feat = store.features[key].set_index("feature_id")
 
     pairs = []
     for fid, val in vec.items():
         fid_s = str(fid)
         symbol = str(feat.loc[fid_s, "symbol"]) if fid_s in feat.index else fid_s
-        z_score = float(zvec[fid]) if zvec is not None and fid in zvec else None
+        z_score = float((float(val) - v_mean) / v_std)
         pairs.append((fid_s, symbol, float(val), z_score))
 
     pairs.sort(key=lambda x: abs(x[2]), reverse=True)
@@ -531,39 +534,51 @@ def heatmap(
 ):
     store = _require_store()
     key = LAYER_FILE.get(layer, layer)
-    if key not in store.zscore_matrices:
+    feat_df = store.features.get(key)
+    if feat_df is None:
         raise HTTPException(status_code=422, detail={"error": "invalid_layer"})
 
-    z_df = store.zscore_matrices[key]
-    feat_df = store.features[key]
+    # Determine features (from variance rank in metadata)
+    if features:
+        f_list = [f.strip() for f in features.split(",") if f.strip()]
+    elif "variance_rank" in feat_df.columns:
+        f_list = feat_df.sort_values("variance_rank").head(top_n)["feature_id"].tolist()
+    else:
+        f_list = feat_df.head(top_n)["feature_id"].tolist()
 
+    # Determine patients
     if patient_ids:
-        p_list = [p.strip() for p in patient_ids.split(",") if p.strip() in z_df.index]
+        p_list = [p.strip() for p in patient_ids.split(",") if p.strip() in store.patient_index]
         if not p_list:
             raise HTTPException(status_code=404, detail={"error": "no_matching_patients"})
     else:
-        p_list = z_df.index[:top_n].tolist()
+        p_list = store.patients["patient_id"].head(top_n).tolist()
 
-    if features:
-        f_list = [f.strip() for f in features.split(",") if f.strip() in z_df.columns]
-        if not f_list:
-            raise HTTPException(status_code=404, detail={"error": "no_matching_features"})
-    else:
-        # Use top variance features
-        if "variance_rank" in feat_df.columns:
-            top_feats = feat_df.sort_values("variance_rank").head(top_n)["feature_id"].tolist()
-        else:
-            top_feats = z_df.var(axis=0).sort_values(ascending=False).head(top_n).index.tolist()
-        f_list = [f for f in top_feats if f in z_df.columns]
+    # Project only requested columns from disk to keep memory minimal (< 1 MB)
+    mat_path = store.directory / f"{key}_matrix.parquet"
+    if not mat_path.exists():
+        raise HTTPException(status_code=503, detail={"error": "matrix_missing"})
 
-    sub_mat = z_df.loc[p_list, f_list]
+    try:
+        col_df = pd.read_parquet(mat_path, columns=f_list)
+        valid_cols = [c for c in f_list if c in col_df.columns]
+        sub_raw = col_df.loc[[p for p in p_list if p in col_df.index], valid_cols]
+    except Exception:
+        m = store.matrices[key]
+        valid_cols = [c for c in f_list if c in m.columns]
+        sub_raw = m.loc[[p for p in p_list if p in m.index], valid_cols]
+
+    mean_v = sub_raw.mean(axis=0)
+    std_v = sub_raw.std(axis=0).replace(0, 1.0)
+    sub_mat = (sub_raw - mean_v) / std_v
+
     feat_meta = feat_df.set_index("feature_id")
-    symbols = [str(feat_meta.loc[f, "symbol"]) if f in feat_meta.index else f for f in f_list]
+    symbols = [str(feat_meta.loc[f, "symbol"]) if f in feat_meta.index else f for f in valid_cols]
 
     return HeatmapResponse(
         layer=key,
-        patient_ids=p_list,
-        feature_ids=f_list,
+        patient_ids=list(sub_mat.index),
+        feature_ids=valid_cols,
         symbols=symbols,
         z_scores=[[round(float(v), 4) for v in row] for row in sub_mat.values],
     )
@@ -919,25 +934,25 @@ def _build_patient_ego_graph(
         for i, (v, sim, is_dir) in enumerate(sorted_hop1[:10])
     ]
 
-    rna_mat = store.matrices["rna"].to_numpy()
-    mirna_mat = store.matrices["mirna"].to_numpy()
-    meth_mat = store.matrices["meth"].to_numpy()
+    for _lyr in ("rna", "mirna", "meth"):
+        store.ensure_explorer_edges(_lyr)
+
+    # Pre-map neighbor similarities directly from precomputed explorer edges without loading full matrices
+    layer_sims = {}
+    for lyr in ("rna", "mirna", "meth"):
+        nbr_tuples = store.explorer_neighbor_map.get(lyr, {}).get(center_idx, [])
+        layer_sims[lyr] = {nbr: sim for nbr, sim, _ in nbr_tuples}
 
     cross_modality_neighbors = []
-    for v, _, _ in sorted_hop1[:10]:
+    for v, sim_hop1, _ in sorted_hop1[:10]:
         pid_v = id_by_idx[v]
-        u_rna, v_rna = rna_mat[center_idx : center_idx + 1], rna_mat[v : v + 1]
-        s_rna = float(cosine_similarity(u_rna, v_rna)[0, 0])
-        u_mirna, v_mirna = mirna_mat[center_idx : center_idx + 1], mirna_mat[v : v + 1]
-        s_mirna = float(cosine_similarity(u_mirna, v_mirna)[0, 0])
-        u_meth, v_meth = meth_mat[center_idx : center_idx + 1], meth_mat[v : v + 1]
-        s_meth = float(cosine_similarity(u_meth, v_meth)[0, 0])
+        s_rna = layer_sims["rna"].get(v, float(sim_hop1) if key == "rna" else 0.0)
+        s_mirna = layer_sims["mirna"].get(v, float(sim_hop1) if key == "mirna" else 0.0)
+        s_meth = layer_sims["meth"].get(v, float(sim_hop1) if key == "meth" else 0.0)
 
-        for _lyr in ("rna", "mirna", "meth"):
-            store.ensure_explorer_edges(_lyr)
-        in_rna = any(nbr == v for nbr, _, _ in store.explorer_neighbor_map.get("rna", {}).get(center_idx, []))
-        in_mirna = any(nbr == v for nbr, _, _ in store.explorer_neighbor_map.get("mirna", {}).get(center_idx, []))
-        in_meth = any(nbr == v for nbr, _, _ in store.explorer_neighbor_map.get("meth", {}).get(center_idx, []))
+        in_rna = v in layer_sims["rna"]
+        in_mirna = v in layer_sims["mirna"]
+        in_meth = v in layer_sims["meth"]
         shared = (int(in_rna) + int(in_mirna) + int(in_meth)) >= 2
 
         cross_modality_neighbors.append(

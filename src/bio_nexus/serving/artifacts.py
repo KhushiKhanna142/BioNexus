@@ -99,14 +99,19 @@ class LazyParquet:
 
 
 class LazyDict(dict):
-    """Dict whose values are LazyParquet / LazyCSV; transparently loads on __getitem__."""
+    """Dict whose values are LazyParquet / LazyCSV; transparently loads on __getitem__ and get."""
     def __getitem__(self, key: str) -> pd.DataFrame:
         val = super().__getitem__(key)
-        if isinstance(val, LazyParquet):
+        if isinstance(val, (LazyParquet, LazyCSV)):
             df = val.get()
             super().__setitem__(key, df)       # cache so next access is instant
             return df
         return val
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if key in self:
+            return self[key]
+        return default
 
     def __contains__(self, key: object) -> bool:
         return super().__contains__(key)
@@ -116,12 +121,17 @@ class LazyCSV:
     def __init__(self, path: Path):
         self._path = path
         self._df: pd.DataFrame | None = None
+
     def get(self) -> pd.DataFrame:
         if self._df is None:
             self._df = pd.read_csv(self._path)
         return self._df
+
     def loaded(self) -> bool:
         return self._df is not None
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.get(), name)
 
 
 class LazyCSVDict(dict):
@@ -132,6 +142,11 @@ class LazyCSVDict(dict):
             super().__setitem__(key, df)
             return df
         return val
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if key in self:
+            return self[key]
+        return default
 
 
 class LazyZscoreDict(dict):
@@ -153,8 +168,13 @@ class LazyZscoreDict(dict):
                 super().__setitem__(key, pd.read_parquet(z_path).astype(np.float32))
             else:
                 m = self._matrices[key]
-                computed = ((m - m.mean(axis=0)) / m.std(axis=0).replace(0, 1.0)).astype(np.float32)
-                super().__setitem__(key, computed)
+                vals = m.to_numpy(dtype=np.float32, copy=True)
+                means = np.mean(vals, axis=0, keepdims=True)
+                stds = np.std(vals, axis=0, keepdims=True)
+                stds[stds == 0] = 1.0
+                vals -= means
+                vals /= stds
+                super().__setitem__(key, pd.DataFrame(vals, index=m.index, columns=m.columns))
         return super().__getitem__(key)
 
     def get(self, key: str, default: Any = None) -> Any:
