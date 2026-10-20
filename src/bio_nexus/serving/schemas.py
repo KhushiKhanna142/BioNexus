@@ -3,7 +3,7 @@ Zero hard-coded values, fake defaults, or mock fixtures.
 """
 
 from typing import Any, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 PAM50 = Literal["LumA", "LumB", "Her2", "Basal", "Normal"]
 Layer = Literal["rna", "mirna", "meth"]
@@ -16,6 +16,8 @@ class ErrorBody(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     status: str
     mode: Literal["live", "unloaded"]
     model_loaded: bool = False

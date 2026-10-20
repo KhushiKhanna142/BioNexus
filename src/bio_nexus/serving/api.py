@@ -131,8 +131,13 @@ async def lifespan(app: FastAPI):
         STORE = None
     else:
         try:
-            STORE = ArtifactStore.load(sdir)
+            # Fast synchronous load of core cohort data (~0.2s) so port binds immediately
+            STORE = ArtifactStore.load(sdir, preload_models=False)
             logger.info("BioNexus serving artifacts successfully loaded from %s (n=%d)", sdir, len(STORE.patients))
+
+            # Load PyTorch models & graphs in background thread to avoid blocking port binding
+            import threading
+            threading.Thread(target=STORE._load_live_models_and_graphs, daemon=True).start()
         except Exception as exc:
             logger.error("Failed to load artifacts from %s: %s", sdir, exc)
             STORE = None

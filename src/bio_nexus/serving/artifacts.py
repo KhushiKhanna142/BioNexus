@@ -140,7 +140,7 @@ class ArtifactStore:
     model_uri: str | None = None
 
     @classmethod
-    def load(cls, directory: Path) -> ArtifactStore:
+    def load(cls, directory: Path, preload_models: bool = True) -> ArtifactStore:
         patients = pd.read_csv(directory / "patients.csv")
         oof = pd.read_parquet(directory / "oof_predictions.parquet")
         labels = json.loads((directory / "labels.json").read_text())
@@ -228,7 +228,8 @@ class ArtifactStore:
             store._load_explorer_artifacts(graphs_dir)
 
         # Preload PyTorch models & graphs for live endpoints
-        store._load_live_models_and_graphs()
+        if preload_models:
+            store._load_live_models_and_graphs()
 
         import gc
         gc.collect()
