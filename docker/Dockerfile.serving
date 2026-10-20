@@ -24,11 +24,16 @@ COPY src/ ./src/
 COPY data/serving/ ./data/serving/
 COPY data/security/ ./data/security/
 COPY configs/ ./configs/
+COPY data/processed/ ./data/processed/
+COPY mlruns/ ./mlruns/
+COPY mlflow.db ./mlflow.db
 
 ENV PYTHONPATH=/app/src
 ENV BIONEXUS_SERVING_DIR=/app/data/serving
 ENV BIONEXUS_ALLOW_MOCK=false
-RUN mkdir -p /app/data/audit /app/data/cases && chown -R bionexus:bionexus /app/data
+ENV BIONEXUS_ALLOW_LOCAL_FALLBACK=true
+ENV MLFLOW_TRACKING_URI=sqlite:////app/mlflow.db
+RUN mkdir -p /app/data/audit /app/data/cases && chown -R bionexus:bionexus /app/data /app/mlruns /app/mlflow.db
 
 USER bionexus
 EXPOSE 8000

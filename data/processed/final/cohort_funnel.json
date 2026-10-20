@@ -1,0 +1,45 @@
+{
+  "total_pancan_atlas": 1084,
+  "stages": [
+    {
+      "stage": 1,
+      "name": "All 3 Omics Layers Available",
+      "count": 1035,
+      "description": "Patients with RNA-seq, miRNA, and DNA methylation profiling available from TCGA-BRCA."
+    },
+    {
+      "stage": 2,
+      "name": "HM450 Methylation Platform",
+      "count": 733,
+      "description": "Dominant array platform retained (486k probes). 302 HM27-platform cases dropped to prevent probe set mismatch."
+    },
+    {
+      "stage": 3,
+      "name": "Locked Training Cohort with PAM50",
+      "count": 646,
+      "description": "Patients with validated PAM50 subtype labels aligned across all 3 omics layers."
+    }
+  ],
+  "subtype_distribution": {
+    "LumA": 342,
+    "LumB": 127,
+    "Basal": 109,
+    "Her2": 39,
+    "Normal": 29
+  },
+  "stage_distribution": {
+    "Stage STAGE IIA": 207,
+    "Stage STAGE IIB": 150,
+    "Stage STAGE IIIA": 103,
+    "Stage STAGE I": 53,
+    "Stage STAGE IA": 51,
+    "Stage STAGE IIIC": 40,
+    "Stage STAGE IIIB": 17,
+    "Stage STAGE IV": 8,
+    "Stage STAGE X": 5,
+    "Stage STAGE II": 5,
+    "Stage STAGE IB": 3,
+    "Stage STAGE III": 2,
+    "Unknown": 2
+  }
+}

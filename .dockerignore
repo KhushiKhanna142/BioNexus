@@ -1,6 +1,4 @@
 data/raw/
-data/processed/
-mlruns/
 .git/
 .venv/
 __pycache__/

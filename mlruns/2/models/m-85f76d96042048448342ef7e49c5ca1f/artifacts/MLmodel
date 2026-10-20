@@ -1,0 +1,52 @@
+artifact_path: file:C:/anushka/bio_nexus/mlruns/2/models/m-85f76d96042048448342ef7e49c5ca1f/artifacts
+flavors:
+  python_function:
+    cloudpickle_version: 3.1.1
+    code: null
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pyfunc.model
+    python_model: python_model.pkl
+    python_version: 3.13.9
+    streamable: false
+is_signature_from_type_hint: false
+mlflow_version: 3.10.1
+model_id: m-85f76d96042048448342ef7e49c5ca1f
+model_size_bytes: 358
+model_uuid: m-85f76d96042048448342ef7e49c5ca1f
+prompts: null
+run_id: 9c62f460c6e0491592afdfba36a4bc9d
+signature:
+  inputs: '[{"type": "string", "name": "patient_id", "required": true}, {"type": "string",
+    "name": "predicted_subtype", "required": true}, {"type": "double", "name": "confidence",
+    "required": true}, {"type": "long", "name": "age", "required": true}, {"type":
+    "string", "name": "session", "required": true}]'
+  outputs: '[{"type": "string", "name": "session_id", "required": true}, {"type":
+    "string", "name": "patient_id", "required": true}, {"type": "string", "name":
+    "predicted_subtype", "required": true}, {"type": "double", "name": "confidence",
+    "required": true}, {"type": "string", "name": "clinical_report", "required": true},
+    {"type": "array", "items": {"type": "object", "properties": {"encoder_type": {"type":
+    "string", "required": true}, "input_features": {"type": "long", "required": true},
+    "input_nodes": {"type": "long", "required": true}, "modality": {"type": "string",
+    "required": true}, "output_embedding_dim": {"type": "long", "required": true},
+    "status": {"type": "string", "required": true}}}, "name": "encoders", "required":
+    true}, {"type": "object", "properties": {"attention_heads": {"type": "long", "required":
+    true}, "fused_dimension": {"type": "long", "required": true}, "fusion_mechanism":
+    {"type": "string", "required": true}, "modalities_fused": {"type": "array", "items":
+    {"type": "string"}, "required": true}, "modality_weights": {"type": "object",
+    "properties": {"meth": {"type": "double", "required": true}, "mirna": {"type":
+    "double", "required": true}, "rna": {"type": "double", "required": true}}, "required":
+    true}, "status": {"type": "string", "required": true}}, "name": "fusion", "required":
+    true}, {"type": "object", "properties": {"method": {"type": "string", "required":
+    true}, "patient_id": {"type": "string", "required": true}, "top_meth_biomarkers":
+    {"type": "array", "items": {"type": "string"}, "required": true}, "top_mirna_biomarkers":
+    {"type": "array", "items": {"type": "string"}, "required": true}, "top_rna_biomarkers":
+    {"type": "array", "items": {"type": "string"}, "required": true}}, "name": "attributions",
+    "required": true}, {"type": "array", "items": {"type": "object", "properties":
+    {"key_genes": {"type": "string", "required": true}, "pathway_id": {"type": "string",
+    "required": true}, "pathway_name": {"type": "string", "required": true}, "relevance_score":
+    {"type": "string", "required": true}}}, "name": "pathways", "required": true}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2026-10-01 07:26:51.984259'

@@ -9,16 +9,21 @@ __pycache__/
 htmlcov/
 .coverage
 
-# Data — DVC-tracked, not git-tracked
+# Data — DVC-tracked, raw not git-tracked
 /data/raw/*
 !/data/raw/.gitkeep
-/data/processed/*
-!/data/processed/.gitkeep
 /models/*.pt
 /metrics/
 
-# MLflow
-mlruns/
+# Processed model artifacts and graphs needed for Render serving
+!/data/processed/checkpoints/*.pt
+!/data/processed/graphs/*
+!/data/processed/final/*
+!/data/processed/results/*
+
+# MLflow model registry and artifacts needed for Render serving
+!mlruns/
+!mlruns/**
 mlartifacts/
 
 # DVC
@@ -39,11 +44,11 @@ frontend/dist/
 frontend-new/node_modules/
 frontend-new/dist/
 
-# Local database & temp files
-mlflow.db
+# Local temp files
 prompt_9_full.txt
 *.png
 
+# Security & Secrets (NEVER track)
 .env
 data/security/polygon_ledger.json
 frontend_old/node_modules/

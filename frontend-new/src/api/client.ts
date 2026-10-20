@@ -5,7 +5,10 @@ import type {
   CostAccuracyResponse, CaseQCReportResponse, BatchResponse,
   PatientSecurityStatus, CohortBatchStatus, MerkleProof,
 } from '@/lib/types';
-const BASE_URL = import.meta.env.VITE_API_URL ?? '';
+const rawBase = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || '').trim();
+export const BASE_URL = rawBase
+  ? (rawBase.startsWith('http://') || rawBase.startsWith('https://') ? rawBase : `https://${rawBase}`).replace(/\/+$/, '')
+  : '';
 
 export class ApiError extends Error {
   status: number;
@@ -18,7 +21,8 @@ export class ApiError extends Error {
 }
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit, signal?: AbortSignal): Promise<T> {
-  const url = `${BASE_URL}${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = BASE_URL ? `${BASE_URL}${cleanEndpoint}` : cleanEndpoint;
   const res = await fetch(url, {
     ...options,
     signal,

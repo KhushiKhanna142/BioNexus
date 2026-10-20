@@ -1,4 +1,7 @@
 services:
+  # -------------------------------------------------------------
+  # 1. BioNexus Backend API (FastAPI + PyTorch + MLflow Serving)
+  # -------------------------------------------------------------
   - type: web
     name: bionexus-api
     runtime: docker
@@ -6,11 +9,36 @@ services:
     dockerContext: .
     plan: free
     region: oregon
+    autoDeploy: true
     healthCheckPath: /health
     envVars:
       - key: BIONEXUS_SERVING_DIR
         value: /app/data/serving
       - key: BIONEXUS_ALLOW_MOCK
         value: "false"
+      - key: BIONEXUS_ALLOW_LOCAL_FALLBACK
+        value: "true"
+      - key: MLFLOW_TRACKING_URI
+        value: sqlite:////app/mlflow.db
       - key: BIONEXUS_CORS_ORIGINS
-        value: "https://bio-nexus-topaz.vercel.app,http://localhost:5173"
+        value: "https://bio-nexus-topaz.vercel.app,http://localhost:5173,http://localhost:3000"
+
+  # -------------------------------------------------------------
+  # 2. BioNexus Frontend (Vite + React Static Site)
+  # -------------------------------------------------------------
+  - type: web
+    name: bionexus-frontend
+    runtime: static
+    buildCommand: cd frontend-new && npm install && npm run build
+    staticPublishPath: frontend-new/dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: bionexus-api
+          property: host

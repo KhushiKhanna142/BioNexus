@@ -1,0 +1,23 @@
+artifact_path: file:C:/anushka/bio_nexus/mlruns/1/models/m-080a028a9a8e49d6a2c585ac4ea8640a/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.13.9
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.10.0+cpu
+mlflow_version: 3.10.1
+model_id: m-080a028a9a8e49d6a2c585ac4ea8640a
+model_size_bytes: 4634795
+model_uuid: m-080a028a9a8e49d6a2c585ac4ea8640a
+prompts: null
+run_id: 018d66020b3d4ae3b807b1aba9f40359
+utc_time_created: '2026-10-01 06:58:35.060425'

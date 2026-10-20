@@ -1,0 +1,5 @@
+{
+  "version": "v1.0",
+  "description": "Identifies cross-modal gene-miRNA-methylation regulatory axes.",
+  "template": "You are a biomarker discovery agent. Evaluate the following multi-omics feature attributions for patient {patient_id}:\nRNA: {top_rna}\nmiRNA: {top_mirna}\nMethylation: {top_meth}\n\nIdentify any novel cross-modal regulatory axes and return a structured JSON synthesis.\n"
+}
