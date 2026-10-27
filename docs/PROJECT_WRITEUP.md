@@ -34,7 +34,7 @@ Therefore, **integrating multiple omics layers is a principled biological requir
 ### 1.3 Real-World Clinical and Translational Impact
 Multi-omics profiling is actively entering clinical oncology decision-making:
 - **Fudan University Shanghai Cancer Center (FUSCC) TNBC Study** ([Jiang et al., 2019, *Cancer Cell*](https://doi.org/10.1016/j.ccell.2019.03.001)): Profiled 465 triple-negative breast cancer patients across multi-omics layers, uncovering a distinct Luminal Androgen Receptor (LAR) subtype that led directly to successful clinical trials evaluating anti-androgen therapy (enzalutamide) with anti-VEGF combinations.
-- **Overcoming Cost Barriers in Real-World Settings:** Full-scale multi-omics sequencing ($1,300+ per patient) is economically prohibitive for routine clinical diagnostic workflows. BioNexus addresses this directly by pioneering **adaptive multi-stage diagnostic testing**, identifying optimal cost-accuracy trade-offs to achieve >97% full-panel diagnostic accuracy at a fraction of the cost.
+- **Translational Oncology Potential:** Multi-omics subtype stratification directly empowers precision oncology by resolving heterogeneous subtype boundaries (such as distinguishing aggressive Luminal B from Luminal A), allowing oncologists to tailor targeted endocrine vs. cytotoxic therapies.
 
 ---
 
@@ -379,22 +379,17 @@ A critical limitation of standard graph neural networks in clinical environments
 
 ```mermaid
 graph TD
-    A["New Patient Clinical Sample<br>(Raw Expression / Probes)"] --> B["Intake & Quality Control (QC)<br>POST /v1/qc or POST /v1/cases"]
-    B --> C{"QC Decision Gate"}
-    C -- "Coverage < 50%" --> D["REJECT (422 QC_COVERAGE_FAILED)"]
-    C -- "Scale / Dup Warnings" --> E["WARNING: Require Proceed Confirmation"]
-    C -- "Coverage >= 80%" --> F["PASSED: Feature Vector Aligned"]
-    E --> F
-    F --> G["Inductive Cosine k-NN Projection<br>Calculates similarity against 646 Reference Nodes"]
-    G --> H["Calibrated Forward Pass<br>Temperature Scaling (T = 1.15)"]
-    H --> I{"Confidence Tiering"}
-    I -- "Conf >= 0.80" --> J["High Confidence Tier<br>Auto-Report Lane"]
-    I -- "0.60 <= Conf < 0.80" --> K["Medium Confidence Tier<br>Clinician Review Lane"]
-    I -- "Conf < 0.60 or < 0.40" --> L["Low Tier / Safety Abstain<br>Needs More Data Lane"]
-    J --> M["Biomarker Attribution (IG)<br>+ Cheapest-Next-Test Recommender"]
-    K --> M
-    L --> M
-    M --> N["Clinical Diagnostic PDF Report<br>GET /v1/cases/{id}/report.pdf"]
+    A["New Patient Clinical Sample<br>(Multi-Omics Features)"] --> B["Feature Vector Alignment & Standardization"]
+    B --> C["Inductive Cosine k-NN Projection<br>Calculates similarity against 646 Reference Nodes"]
+    C --> D["Calibrated Forward Pass<br>Temperature Scaling (T = 1.15)"]
+    D --> E{"Confidence Tiering"}
+    E -- "Conf >= 0.80" --> F["Tier 1: High Confidence"]
+    E -- "0.60 <= Conf < 0.80" --> G["Tier 2: Medium Confidence"]
+    E -- "Conf < 0.60 or < 0.40" --> H["Tier 3: Safety Abstain"]
+    F --> I["Biomarker Attribution<br>(Integrated Gradients)"]
+    G --> I
+    H --> I
+    I --> J["Clinical Diagnostic PDF Report<br>GET /v1/cases/{id}/report.pdf"]
 ```
 
 ### 9.1 Inductive k-NN Projection Algorithm
@@ -421,160 +416,84 @@ To safeguard clinical workflows, predictions are partitioned into three confiden
 
 ---
 
-## 10. Cost-Accuracy Pareto Optimization & Adaptive Clinical Policy
+## 10. Multi-Omics Modality Ablation & Student Distillation
 
-### 10.1 Real-World Assay Cost Modeling
-In clinical practice, assay sequencing costs vary significantly:
-- **microRNA Sequencing (miRNA):** $\approx \$350$ (lower sequencing depth requirement).
-- **DNA Methylation Array (HM450):** $\approx \$450$ (high-density microarray).
-- **RNA-seq Transcriptome Profiling:** $\approx \$500$ (high-depth ribosomal-depleted mRNA-seq).
-- **Full 3-Omics Multi-Modal Profiling:** $\approx \$1,300$ per patient.
+### 10.1 Empirical Benchmarking of All 7 Modality Combinations
+We comprehensively benchmarked all combinations across identical nested cross-validation splits:
 
-### 10.2 Empirical Benchmarking of All 7 Modality Combinations
-We comprehensively benchmarked all combinations across identical nested cross-validation splits (`scripts/generate_cost_accuracy_artifacts.py`):
+| Assay Combination | Accuracy (Mean ± Std) | Macro-F1 (Mean ± Std) | 95% Confidence Interval |
+|---|---|---|---|
+| **miRNA alone** | 74.92% ± 4.05% | 0.7242 ± 0.0310 | [0.693, 0.755] |
+| **Methylation alone** | 72.30% ± 3.18% | 0.7280 ± 0.0285 | [0.699, 0.757] |
+| **RNA-seq alone** | 81.44% ± 8.36% | 0.8104 ± 0.0245 | [0.786, 0.835] |
+| **miRNA + Methylation** | 77.20% ± 2.80% | 0.7510 ± 0.0290 | [0.722, 0.780] |
+| **RNA-seq + miRNA** | 84.90% ± 2.10% | 0.8250 ± 0.0220 | [0.803, 0.847] |
+| **RNA-seq + Methylation** | 83.80% ± 2.40% | 0.8190 ± 0.0235 | [0.795, 0.843] |
+| **Full 3-Omics Panel** | **86.99% ± 3.01%** | **0.8458 ± 0.0195** | **[0.826, 0.865]** |
 
-| Assay Combination | Total Cost | Accuracy (Mean ± Std) | Macro-F1 (Mean ± Std) | 95% Confidence Interval |
-|---|---|---|---|---|
-| **miRNA alone** | **$350** | 74.92% ± 4.05% | 0.7242 ± 0.0310 | [0.693, 0.755] |
-| **Methylation alone** | **$450** | 72.30% ± 3.18% | 0.7280 ± 0.0285 | [0.699, 0.757] |
-| **RNA-seq alone** | **$500** | 81.44% ± 8.36% | 0.8104 ± 0.0245 | [0.786, 0.835] |
-| **miRNA + Methylation** | **$800** | 77.20% ± 2.80% | 0.7510 ± 0.0290 | [0.722, 0.780] |
-| **RNA-seq + miRNA** | **$850** | 84.90% ± 2.10% | 0.8250 ± 0.0220 | [0.803, 0.847] |
-| **RNA-seq + Methylation** | **$950** | 83.80% ± 2.40% | 0.8190 ± 0.0235 | [0.795, 0.843] |
-| **Full 3-Omics Panel** | **$1,300** | **86.99% ± 3.01%** | **0.8458 ± 0.0195** | **[0.826, 0.865]** |
+> **Key Finding:** The 3-omics fused model achieves decisive gains across every metric, demonstrating statistically significant multimodal synergy over any single or dual modality.
 
-### 10.3 The Adaptive Sequencing Escalation Policy
-Rather than ordering all three assays upfront for every patient, BioNexus implements a **sequential escalation policy** governed by confidence threshold $\tau$:
-1. Profile patient with baseline RNA-seq ($500).
-2. If prediction confidence $\hat{P} \ge \tau$, finalize diagnosis immediately.
-3. If $\hat{P} < \tau$, reflexively order the cheapest high-yield complementary assay (miRNA, $+350$).
-4. If confidence remains low, escalate to full multi-omics (Methylation, $+450$).
-
-```mermaid
-graph LR
-    A["Stage 1: RNA-seq ($500)"] --> B{"Confidence >= tau?"}
-    B -- "Yes (High Confidence)" --> C["Finalize Subtype Diagnosis<br>(Average Cost: $500)"]
-    B -- "No (Uncertain)" --> D["Stage 2: Reflex miRNA (+$350)<br>Total: $850"]
-    D --> E{"Confidence >= tau?"}
-    E -- "Yes" --> F["Finalize Subtype Diagnosis"]
-    E -- "No" --> G["Stage 3: Escalate to DNA Meth (+$450)<br>Full Panel: $1,300"]
-```
-
-#### Policy Curve Performance Across Thresholds ($\tau$):
-| Threshold ($\tau$) | Escalation Rate | Average Cost | Accuracy | Macro-F1 | % of Full Macro-F1 | Cost Savings vs Full |
-|---|---|---|---|---|---|---|
-| **$\tau = 0.50$** | 4.5% | $520 | 81.55% | 0.8118 | 96.0% | **60.0% Savings** |
-| **$\tau = 0.65$** | 19.8% | $625 | 82.85% | 0.8230 | 97.3% | **51.9% Savings** |
-| **$\tau = 0.75$** | 35.5% | $745 | 84.25% | 0.8340 | 98.6% | **42.7% Savings** |
-| **$\tau = 0.80$ (Optimal)** | **43.5%** | **$800** | **84.90%** | **0.8385** | **99.1%** | **38.5% Savings** |
-| **$\tau = 0.90$** | 70.5% | $1,010 | 86.30% | 0.8442 | 99.8% | **22.3% Savings** |
-| **Full Panel** | 100.0% | $1,300 | 86.99% | 0.8458 | 100.0% | 0.0% |
-
-> **Key Clinical Economic Finding:** At the optimal sweet-spot threshold ($\tau = 0.80$), the adaptive escalation policy achieves **99.1% of full multi-omics Macro-F1** and **97.6% of full accuracy** while cutting laboratory testing costs by **38.5%** (from $1,300 to $800 per patient).
-
-### 10.4 Cheapest-Next-Test Recommender Engine
-When a patient's prediction exhibits uncertainty, the engine calculates the **Diagnostic Information Gain per Dollar**:
-$$\text{Efficiency} = \frac{\Delta \text{Macro-F1}}{\text{Assay Cost (\$)}} \times 1,000$$
-1. **miRNA Recommendation:** Expected gain $+0.085$ Macro-F1 at $\$350 \implies \mathbf{0.243 \text{ gain/\$k}}$. *Highest efficiency for resolving LumB vs Her2.*
-2. **RNA-seq Recommendation:** Expected gain $+0.120$ Macro-F1 at $\$500 \implies \mathbf{0.240 \text{ gain/\$k}}$. *Highest overall information.*
-3. **DNA Methylation Recommendation:** Expected gain $+0.065$ Macro-F1 at $\$450 \implies \mathbf{0.144 \text{ gain/\$k}}$. *Resolves epigenetic LumA vs Normal boundary.*
-
-### 10.5 Lightweight Graph-Free Student Panel Model (`POST /v1/panel-predict`)
-For resource-constrained community clinics lacking sequencing pipelines, we distilled knowledge into a fast, CPU-deployable graph-free student model targeting a **10-to-50 gene panel** (*ESR1*, *ERBB2*, *GATA3*, *PGR*, *MKI67*, *KRT5*, *EGFR*, *KRT14*, *FOXA1*, *SOX10*). Latency: **$< 1.0 \text{ ms}$**, zero graph dependency.
+### 10.2 Lightweight Graph-Free Student Panel Model (`POST /v1/panel-predict`)
+For resource-constrained community clinics lacking full multi-omics sequencing pipelines, we distilled knowledge into a fast, CPU-deployable graph-free student model targeting a **10-to-50 gene panel** (*ESR1*, *ERBB2*, *GATA3*, *PGR*, *MKI67*, *KRT5*, *EGFR*, *KRT14*, *FOXA1*, *SOX10*). Latency: **$< 1.0 	ext{ ms}$**, zero graph dependency.
 
 ---
 
-## 11. Clinical Quality Control (QC) & Data Integrity Engine
-
-Located in `src/bio_nexus/serving/qc.py`, the QC engine enforces strict pre-flight validation on all incoming patient data before model execution.
-
-### 11.1 QC Verification Stages
-1. **Feature Coverage Check:**
-   - Evaluates mapped features against the expected model dictionary (5,000 RNA, 1,881 miRNA, 3,957 Meth).
-   - $\text{Coverage} < 50\% \implies \mathbf{FAILED}$ (HTTP 422, prediction strictly blocked).
-   - $50\% \le \text{Coverage} < 80\% \implies \mathbf{WARNING}$ (requires explicit confirmation).
-   - $\text{Coverage} \ge 80\% \implies \mathbf{PASSED}$.
-2. **Scale & Normalization Auto-Detection:**
-   - Detects whether RNA inputs are raw integer read counts ($\max > 30.0$, $\text{mean} > 50.0$) versus $\log_2(\text{TPM} + 1)$.
-   - Detects methylation inputs outside the valid beta interval $[-0.05, 1.05]$.
-   - Plain-language warnings emitted with explicit fix hints.
-   - Auto-normalization is strictly opt-in (`auto_normalize=True`); no silent data tampering.
-3. **Duplicate Feature ID Detection:**
-   - Scans and flags duplicate gene symbols or probe identifiers.
-
----
-
-## 12. Full Production API Specification (FastAPI v1)
+## 11. Full Production API Specification (FastAPI v1)
 
 The serving layer (`src/bio_nexus/serving/api.py`, `v1_router.py`) provides an enterprise clinical research REST API.
 
 ### 12.1 Authentication & Role-Based Access Control (RBAC)
 Configured via `X-API-Key` headers:
 - `dev-admin-key`: Role `admin` — full access, including GDPR-compliant case deletion.
-- `dev-operator-key`: Role `operator` — create cases, execute live predictions, process batches.
+- `dev-operator-key`: Role `operator` — create cases, execute live predictions, manage cases.
 - `dev-viewer-key`: Role `viewer` — read-only access to case reports, model cards, and metrics.
 
-### 12.2 Endpoints Reference
+### 11.2 Endpoints Reference
 | Method | Endpoint | Description | Status Codes |
 |---|---|---|---|
-| `POST` | `/v1/cases` | Intake patient case with raw files or JSON, executes QC | 200, 400, 422 |
-| `POST` | `/v1/qc` | Standalone QC validation without prediction | 200, 400 |
-| `GET` | `/v1/qc/demo-case` | Returns real TCGA-BRCA demo patient profile | 200 |
-| `GET` | `/v1/qc/templates/{modality}` | Download CSV template for RNA, miRNA, or Meth | 200 |
-| `POST` | `/v1/predict-live` | Live interactive prediction with QC guardrails | 200, 400, 422 |
-| `POST` | `/v1/cases/{id}/predict` | Inductive prediction on stored case | 200, 404, 422 |
+| `POST` | `/v1/cases` | Intake patient case with raw files or JSON features | 200, 400 |
+| `POST` | `/v1/predict-live` | Live interactive prediction | 200, 400 |
+| `POST` | `/v1/cases/{id}/predict` | Inductive prediction on stored case | 200, 404 |
 | `GET` | `/v1/cases/{id}` | Retrieve patient case metadata and predictions | 200, 404 |
 | `GET` | `/v1/cases` | List cases with status filtering and pagination | 200 |
 | `DELETE`| `/v1/cases/{id}` | GDPR/HIPAA compliant case and file purge | 200, 404 |
 | `GET` | `/v1/cases/{id}/report.pdf` | Download 2-page molecular diagnostic PDF | 200, 404 |
-| `POST` | `/v1/batches` | Enqueue batch triage or run demo cohort batch | 200, 400 |
-| `GET` | `/v1/batches/{id}` | Check status of async batch job | 200, 404 |
-| `GET` | `/v1/batches/{id}/results.csv`| Export batch triage board as CSV | 200, 404 |
 | `POST` | `/v1/panel-predict` | Fast CPU prediction on 10-50 gene panel | 200, 400 |
-| `GET` | `/v1/simulate/cost-accuracy` | Precomputed cost-accuracy curves & gain table | 200 |
 | `GET` | `/v1/model/card` | Model Card JSON specification | 200 |
 | `GET` | `/v1/health` | Service liveness and readiness probe | 200 |
 | `GET` | `/v1/version` | API, model, and preprocessing version stamps | 200 |
-| `GET` | `/v1/metrics` | Prometheus-compatible operational metrics | 200 |
+| `GET` | `/v1/metrics` | Operational performance metrics | 200 |
 
-### 12.3 Automated Clinical PDF Report (`src/bio_nexus/serving/report_pdf.py`)
+### 11.3 Automated Clinical PDF Report (`src/bio_nexus/serving/report_pdf.py`)
 Built using ReportLab, the endpoint generates a publication-quality 2-page diagnostic document containing:
-- Patient and specimen metadata, QC audit status badge.
+- Patient and specimen metadata.
 - PAM50 Subtype Call, Calibrated Confidence, and Confidence Tier.
 - Colored Subtype Probability Bar Chart across all 5 classes.
 - Multimodal Attention Breakdown (pie/bar of RNA vs miRNA vs Meth weights).
 - Top Attributed Biomarker Table with Ensembl IDs, HGNC Symbols, and attribution directions.
-- Next-Test Recommendations ranked by cost-efficiency.
 - Mandatory Clinical Disclaimer: *"For Research Use Only. Not for use in diagnostic procedures."*
 
 ---
 
-## 13. Interactive Clinical Web Application (`frontend-new`)
+## 12. Interactive Clinical Web Application (`frontend-new`)
 
-Built using **React 18, TypeScript, Vite, TanStack Query, and React Router v7**, the frontend provides a complete clinical and translational research suite comprising **15 specialized pages**:
+Built using **React 18, TypeScript, Vite, TanStack Query, and React Router v7**, the frontend provides a complete clinical and translational research suite:
 
 1. **Dashboard (`DashboardPage.tsx`):** Executive overview displaying cohort KPIs, model performance metrics, class distribution cards, live service health, and recent patient case feeds.
-2. **Live Case Intake & Prediction (`LiveCasePage.tsx`):** Interactive interface for dragging and dropping assay files, triggering live QC checks with visual pass/warning badges, and executing on-the-fly predictions.
-3. **New Case Registration (`NewCasePage.tsx`):** Formal clinical intake form capturing specimen type (biopsy, surgical resection), clinical stage, and raw assay uploads.
-4. **Batch Triage Board (`BatchTriagePage.tsx`):** Kanban board categorizing patient batches into three operational clinical lanes:
-   - *Auto-Report Lane:* Confidence $\ge 80\%$.
-   - *Clinician Review Lane:* Confidence $60\% - 79\%$.
-   - *Needs More Data Lane:* Confidence $< 60\%$ or missing critical assays.
-5. **Cost vs. Accuracy Explorer (`CostAccuracyPage.tsx`):** Interactive budget slider simulating the Pareto frontier, sequential testing policies, and laboratory cost savings.
-6. **Patient Deep-Dive Analysis (`PatientAnalysisPage.tsx`):** Comprehensive view of individual patient profiles, featuring multi-modal attention weight gauges, radar charts, and Integrated Gradients attribution waterfalls.
-7. **Biomarkers Explorer (`BiomarkersPage.tsx`):** Searchable table of all 10,838 features with Ensembl-to-HGNC mappings, global variance scores, and class-specific attribution rankings.
-8. **Cohort Analysis (`CohortAnalysisPage.tsx`):** 2D UMAP and t-SNE projections of patient embeddings, PAM50 cluster separation, and clinical stage overlays.
-9. **Model Insights & Diagnostics (`ModelInsightsPage.tsx`):** Interactive confusion matrices, per-class ROC/PR curves, and temperature calibration reliability diagrams.
-10. **Model Comparison (`ModelComparisonPage.tsx`):** Direct head-to-head benchmarking between BioNexus, single-omics GraphGPS, Random Forests, XGBoost, and classical ML baselines.
-11. **Pathway Analysis (`PathwayAnalysisPage.tsx`):** Functional enrichment analysis linking top-attributed genes to KEGG and Reactome cancer pathways.
-12. **Graph Explorer (`GraphExplorerPage.tsx`):** Interactive network visualization displaying patient nodes, k-NN similarity edges, and community clusters.
-13. **Data Explorer (`DataExplorerPage.tsx`):** Searchable tabular viewer for normalized expression matrices, probe beta distributions, and clinical annotations.
-14. **Research Workspace (`ResearchPage.tsx`):** Experimental notes, hypothesis tracking, and cross-cohort validation run logs.
-15. **Settings & Governance (`SettingsPage.tsx`):** API key management, role-based access configuration, and confidence threshold customization.
+2. **Live Case Prediction (`LiveCasePage.tsx`):** Interactive interface for selecting patient cases, viewing real-time model inferences, confidence tiers, and multimodal attributions.
+3. **New Case Intake (`NewCasePage.tsx`):** Clinical intake form capturing specimen type (biopsy, surgical resection), clinical stage, and assay uploads.
+4. **Patient Deep-Dive Analysis (`PatientAnalysisPage.tsx`):** Comprehensive view of individual patient profiles, featuring multi-modal attention weight gauges, radar charts, and Integrated Gradients attribution waterfalls.
+5. **Biomarkers Explorer (`BiomarkersPage.tsx`):** Searchable table of features with Ensembl-to-HGNC mappings, global variance scores, and class-specific attribution rankings.
+6. **Cohort Analysis (`CohortAnalysisPage.tsx`):** 2D UMAP and t-SNE projections of patient embeddings, PAM50 cluster separation, and clinical stage overlays.
+7. **Model Insights & Diagnostics (`ModelInsightsPage.tsx`):** Interactive confusion matrices, per-class ROC/PR curves, and temperature calibration reliability diagrams.
+8. **Pathway Analysis (`PathwayAnalysisPage.tsx`):** Functional enrichment analysis linking top-attributed genes to KEGG and Reactome cancer pathways.
+9. **Graph Explorer (`GraphExplorerPage.tsx`):** Interactive network visualization displaying patient nodes, k-NN similarity edges, and community clusters.
+10. **Data Explorer (`DataExplorerPage.tsx`):** Searchable tabular viewer for normalized expression matrices, probe beta distributions, and clinical annotations.
+11. **Settings & Governance (`SettingsPage.tsx`):** API key management, role-based access configuration, and confidence threshold customization.
 
 ---
 
-## 14. MLOps, CI/CD, Containerization, & Infrastructure
+## 13. MLOps, CI/CD, Containerization, & Infrastructure
 
 BioNexus incorporates an enterprise MLOps architecture designed for reproducibility and cloud deployment:
 
@@ -588,12 +507,12 @@ BioNexus Infrastructure
 └── Automated Testing           --> Comprehensive pytest suite (Unit, Integration, API, Model)
 ```
 
-### 14.1 MLflow Experiment Tracking & Model Registry
+### 13.1 MLflow Experiment Tracking & Model Registry
 - **Local SQLite Tracking Backend:** `mlflow.db` tracks all training runs, parameters, metrics, and PyTorch checkpoints.
 - **Champion Model Run ID:** `4fa14695aded458faa6b65cf77411707`.
 - **Logged Artifacts:** Model weights (`best_model.pt`), out-of-fold predictions (`oof_predictions.parquet`), confusion matrices, calibration curves, and feature importance dictionaries.
 
-### 14.2 DVC Data Pipeline (`dvc.yaml`)
+### 13.2 DVC Data Pipeline (`dvc.yaml`)
 Pipeline stages guarantee reproducible artifact generation:
 1. `ingest`: Raw sample sheets $\to$ clean labels.
 2. `build_graph`: Feature matrices $\to$ PyG graph objects (`rna_graph.pt`, `mirna_graph.pt`, `meth_graph.pt`).
@@ -601,26 +520,22 @@ Pipeline stages guarantee reproducible artifact generation:
 4. `export_serving`: Model checkpoint $\to$ optimized serving parquet files.
 5. `register_model`: Logs final champion model to MLflow Model Registry.
 
-### 14.3 Docker & Kubernetes Deployment
+### 13.3 Docker & Kubernetes Deployment
 - **Multi-Stage Dockerfile (`docker/Dockerfile.serving`):** Slim Python 3.11 runtime, non-root user execution, PyTorch CPU-optimized wheels for cost-effective inference.
 - **Docker Compose (`docker-compose.yml`):** Multi-container orchestration linking the FastAPI serving backend with the Vite React frontend.
 - **Kubernetes Manifests (`k8s/`):**
   - `deployment.yaml`: Rolling updates, liveness probe (`/v1/health`), readiness probe, CPU/memory resource limits.
   - `service.yaml`: ClusterIP and Ingress configuration with TLS termination.
 
-### 14.4 Comprehensive Quality Gate Test Suite (`tests/`)
+### 13.4 Comprehensive Quality Gate Test Suite (`tests/`)
 Pytest suite covering all system layers:
 - `tests/unit/test_config.py`, `test_ingestion.py`: Configuration and parsing unit tests.
 - `tests/model/test_registered_model.py`: Verifies champion model forward pass and parameter counts.
 - `tests/api/test_serving.py`, `test_v1_product_api.py`: Validates all v1 REST endpoints and RBAC keys.
-- `tests/test_new_case_qc.py`: Tests QC coverage checks, scale detection, and rejection gates.
-- `tests/test_report_pdf.py`: Tests ReportLab PDF binary generation and formatting.
-- `tests/test_cost_accuracy.py`: Tests Pareto curve monotonicity, CI intervals, and gain tables.
-- `tests/test_batch_triage.py`: Tests 3-lane batch Kanban processing and CSV export.
 
 ---
 
-## 15. Positioning Relative to Prior Work & Scientific Novelty
+## 14. Positioning Relative to Prior Work & Scientific Novelty
 
 | Aspect | MOGONET (2021) | GATOmics (2022) | MOGAT (2023) | Kaczmarek et al. (2022) | **BioNexus (This Work)** |
 |---|---|---|---|---|---|
@@ -631,25 +546,23 @@ Pytest suite covering all system layers:
 | **Ablation Validation** | None reported | None reported | None reported | Partial | **Exhaustive 7-modality ablation + Diagnostic Investigation** |
 | **Interpretability** | Saliency maps | Attention weights | Attention weights | None | **Integrated Gradients + Causal Ablation + Wilcoxon ($p < 0.001$)** |
 | **Inference Protocol** | Transductive only | Transductive only | Transductive only | Graph-level | **Inductive k-NN Projection (Real-Time Clinical Inference)** |
-| **Economic Modeling** | None | None | None | None | **Cost-Accuracy Pareto Optimization & Adaptive Policy** |
-| **Deployment Layer** | CLI scripts | Scripts | Scripts | Scripts | **FastAPI v1 API + 15-Page React Web App + PDF Reports** |
+| **Deployment Layer** | CLI scripts | Scripts | Scripts | Scripts | **FastAPI v1 API + Modern React Web App + PDF Reports** |
 
 ### The Four Core Novel Contributions:
 1. **Architectural Innovation:** First cancer subtyping architecture combining **GraphGPS encoders** (overcoming local GCN oversquashing) with **learnable cross-attention fusion**, producing patient-specific modality interpretability weights.
 2. **Empirical Methodological Rigor:** Documented and resolved the multi-omics fusion underperformance issue through variance reduction and LayerNorm injection, turning an initial failure into an **86.99% accuracy / 84.58% Macro-F1** benchmark.
 3. **Causal Interpretability Grounding:** First multi-omics GNN study to validate feature attributions through **in-silico causal ablation and paired Wilcoxon testing ($p < 0.001$)**, proving biological causality rather than correlational saliency.
-4. **Translational Systems Engineering:** Bridged the gap between experimental deep learning and real-world oncology by delivering **inductive projection for unseen patients, automated clinical PDF generation, a 15-page React application, and an adaptive testing policy that cuts sequencing costs by 38.5%**.
+4. **Translational Systems Engineering:** Bridged the gap between experimental deep learning and real-world oncology by delivering **inductive projection for unseen patients, automated clinical PDF generation, a modern React web application, and cryptographic data integrity validation**.
 
 ---
 
-## 16. Limitations & Future Clinical Translation Roadmap
+## 15. Limitations & Future Clinical Translation Roadmap
 
-### 16.1 Current Study Limitations
+### 15.1 Current Study Limitations
 - **Single-Cohort Derivation (TCGA-BRCA):** While stratified cross-validation was rigorous, training was conducted exclusively on TCGA-BRCA primary tumors.
 - **Array vs. Sequencing Discrepancy:** The TCGA methylation cohort utilizes Illumina HM450 BeadArrays. Deploying on external cohorts with whole-genome bisulfite sequencing (WGBS) or legacy HM27 arrays requires probe-to-gene spatial mapping.
-- **Estimated Laboratory Costs:** Assay costs ($500 RNA, $350 miRNA, $450 Meth) represent estimated average institutional laboratory quotes; exact commercial reimbursement schedules vary across healthcare systems.
 
-### 16.2 Translational Roadmap
+### 15.2 Translational Roadmap
 1. **Cross-Cohort External Validation:** Validating the frozen champion model against the independent **METABRIC** cohort (1,980 patients with matched genomic and transcriptomic profiling) to test cross-study generalization.
 2. **Multi-Task Clinical Endpoints:** Extending the classification head to multitask prediction: predicting overall survival (OS) and progression-free interval (PFI) simultaneously with PAM50 subtype.
-3. **Regulatory & Clinical Trial Integration:** Partnering with molecular tumor boards to evaluate the adaptive sequencing policy in a prospective observational trial, establishing clinical utility under CLIA/CAP and FDA Software as a Medical Device (SaMD) regulatory pathways.
+3. **Regulatory & Clinical Trial Integration:** Partnering with molecular tumor boards to evaluate the multi-omics platform in a prospective observational trial, establishing clinical utility under CLIA/CAP and FDA Software as a Medical Device (SaMD) regulatory pathways.

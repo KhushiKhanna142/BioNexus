@@ -110,25 +110,29 @@ Open **`https://bio-nexus-topaz.vercel.app`** in your browser. Walk through thes
 
 ---
 
-### Step 6: Model Comparison (`/model-comparison`) — Multi-Omics Superiority
+### Step 6: Cohort Analysis (`/cohort-analysis`) — Subtype Stratification & Embeddings
 * **What to Show:**
-  * Benchmark table: Single-omics vs Multi-omics.
-  * Radar chart of F1 scores across all 5 classes.
+  * Subtype distribution across the 646 patient cohort (LumA, LumB, Basal, Her2, Normal).
+  * 2D Dimensionality Reduction (UMAP / PCA) projections across individual omics vs fused latent space.
+  * Clinical Kaplan-Meier survival curves demonstrating subtype prognostic differentiation.
 * **What to Say:**
-  > *"Here is our empirical benchmark across 5-fold stratified cross-validation:*
+  > *"Cohort Analysis gives clinicians a macroeconomic view of patient stratification.*
   >
-  > *Single-omics models achieve 81.4% (RNA), 74.9% (miRNA), and 72.3% (Methylation). By using our **GraphGPS Multimodal Cross-Attention architecture**, our fused model reaches **86.99% accuracy and a 0.846 Macro-F1 score**.*
+  > *In the UMAP projections, observe how multi-omics fusion creates well-separated subtype manifolds compared to single-omics embeddings, cleanly disentangling Luminal A and Luminal B tumors.*
   >
-  > *The radar chart shows that Basal-like (triple-negative) tumors achieve >94% F1 due to high genomic instability, while intermediate Luminal B cases benefit the most from methylation and miRNA cross-attention."*
+  > *The associated Kaplan-Meier curves highlight the clinical reality: Basal and HER2-enriched patients exhibit significantly steeper hazard curves, corroborating our model's risk stratification with real patient survival outcomes."*
 
 ---
 
-### Step 7: New Case (QC) (`/new-case`) — Prospective Patient Quality Control
+### Step 7: Biomarkers & Molecular Pathways (`/biomarkers`) — Biological Interpretability
 * **What to Show:**
-  * Prospective patient ingestion upload portal.
-  * Quality Control (QC) Gate checks: Variance threshold, Log2 check, Outlier boundary verification.
+  * Top attributed biomarker rankings across RNA, miRNA, and DNA methylation layers.
+  * Layer-specific impact distributions and feature effect directions.
+  * Wilcoxon statistical significance evidence confirming non-random attribution signal.
 * **What to Say:**
-  > *"In a clinical diagnostic lab, new sequencing data cannot be fed blindly into a neural network. Our prospective pipeline includes an automated **Quality Control Gate** that verifies zero-variance filtering, log2 transformation normalization, and outlier thresholds before any inference is executed."*
+  > *"Our Biomarker deep-dive connects deep learning representations directly back to molecular oncology.*
+  >
+  > *Clinicians can drill down into each omics layer to inspect top drivers such as ESR1, FOXA1, and GATA3 for Luminal subtypes, or specific hypomethylated CpG loci in Basal tumors. Every biomarker ranking is backed by our Wilcoxon-validated attribution impact, ensuring clinicians receive dependable, biologically grounded insights."*
 
 ---
 
