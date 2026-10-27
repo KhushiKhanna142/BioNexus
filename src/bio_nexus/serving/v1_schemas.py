@@ -6,7 +6,7 @@ Strict validation, OpenAPI examples, and RFC 7807 Problem Details.
 from __future__ import annotations
 
 from typing import Any, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 ConfidenceTier = Literal["high", "medium", "low"]
 PAM50Subtype = Literal["LumA", "LumB", "Her2", "Basal", "Normal"]
@@ -91,6 +91,7 @@ class NextTestRecommendationItem(BaseModel):
 
 
 class CasePredictResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     case_id: str
     patient_ref: str
     predicted_subtype: PAM50Subtype
@@ -121,6 +122,7 @@ class PanelPredictRequest(BaseModel):
 
 
 class PanelPredictResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     patient_ref: str
     predicted_subtype: PAM50Subtype
     confidence: float

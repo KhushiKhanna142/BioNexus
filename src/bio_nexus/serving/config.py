@@ -18,6 +18,7 @@ class ServingSettings(BaseSettings):
         env_prefix="BIONEXUS_",
         env_file=".env",
         extra="ignore",
+        protected_namespaces=(),
     )
 
     # Server & Environment

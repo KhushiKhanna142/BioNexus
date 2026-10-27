@@ -2,19 +2,20 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, UserSearch, Database, Brain,
   Users, BookOpen, Settings, ChevronLeft, ChevronRight,
-  FlaskConical, Route, Share2, UploadCloud,
+  FlaskConical, Route, Share2, UploadCloud, Scale,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/new-case', label: 'New Case (QC)', icon: UploadCloud },
   { path: '/patient-analysis', label: 'Patient Analysis', icon: UserSearch },
   { path: '/graph-explorer', label: 'Graph Explorer', icon: Share2 },
   { path: '/data-explorer', label: 'Data Explorer', icon: Database },
   { path: '/model-insights', label: 'Model Insights', icon: Brain },
+  { path: '/model-comparison', label: 'Model Comparison', icon: Scale },
   { path: '/cohort-analysis', label: 'Cohort Analysis', icon: Users },
-  { path: '/new-case', label: 'New Case (QC)', icon: UploadCloud },
   { path: '/research', label: 'Research', icon: BookOpen },
 ];
 
