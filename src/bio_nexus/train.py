@@ -49,37 +49,25 @@ from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
 
 
 class FocalLoss(nn.Module):
-    """Focal Loss (Lin et al., 2017) for multi-class classification.
+    """Multi-class Focal Loss (Lin et al., 2017) with per-class alpha weights.
 
-    FL(p_t) = -alpha_t * (1 - p_t)^gamma * log(p_t)
-
-    gamma=2.0 is the standard recommendation. It down-weights the loss from
-    easy, high-confidence samples (Basal, Her2 with p_t > 0.95) and
-    concentrates gradient updates on ambiguous borderline cases (LumA vs LumB
-    where p_t ~ 0.5), which are responsible for >75% of BioNexus errors.
-
-    alpha: [num_classes] class-level weight tensor (addresses LumA ~50% imbalance).
+    When gamma=0.0, this exactly reduces to standard weighted CrossEntropyLoss.
+    For small cohorts (N=646), gamma > 0 applies a smooth focal modulator (1 - p_t)^gamma
+    to prevent high-confidence LumA/Basal cases from dominating the gradient update.
     """
 
-    def __init__(self, alpha: torch.Tensor | None = None, gamma: float = 2.0):
+    def __init__(self, alpha: torch.Tensor | None = None, gamma: float = 0.0):
         super().__init__()
         self.gamma = gamma
-        self.register_buffer("alpha", alpha)  # [num_classes] or None
+        self.register_buffer("alpha", alpha)
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        # Per-sample CE loss (unreduced), shape [N]
-        ce = F.cross_entropy(logits, targets, reduction="none")
-        # p_t: predicted probability of the true class
-        p_t = torch.exp(-ce)
-        # Modulating factor: strongly down-weights easy examples
+        if self.gamma == 0.0:
+            return F.cross_entropy(logits, targets, weight=self.alpha)
+        ce = F.cross_entropy(logits, targets, weight=self.alpha, reduction="none")
+        p_t = torch.exp(-F.cross_entropy(logits, targets, reduction="none"))
         modulator = (1.0 - p_t) ** self.gamma
-        focal = modulator * ce
-        # Apply per-class alpha weight
-        if self.alpha is not None:
-            at = self.alpha[targets]
-            focal = at * focal
-        return focal.mean()
-
+        return (modulator * ce).mean()
 
 @dataclass
 class TrainConfig:
@@ -88,7 +76,7 @@ class TrainConfig:
     lr: float = 1e-3
     weight_decay: float = 1e-4  # L2 regularization - important given param/patient ratio
     early_stop_patience: int = 25  # raised from 20 to give CosineAnnealingLR room to converge
-    focal_gamma: float = 2.0      # Focal Loss gamma parameter
+    focal_gamma: float = 1.0      # Focal Loss gamma (1.0 is safe for N=646; 2.0 causes collapse)
     seed: int = 42
 
 
@@ -317,7 +305,9 @@ def train_one_fold(
         "balanced", classes=np.arange(len(PAM50_SUBTYPES)), y=y[train_idx]
     )
     class_weights_t = torch.tensor(class_weights, dtype=torch.float32, device=device)
-    # FocalLoss: focuses gradient on hard boundary cases (LumA/LumB), not easy ones (Basal/Her2)
+    # FocalLoss: class_weights serve as alpha inside F.cross_entropy; focal modulator
+    # (gamma=1.0) gently down-weights easy Basal/Her2 samples. gamma=1.0 (not 2.0)
+    # avoids gradient instability on the small 646-patient cohort.
     loss_fn = FocalLoss(alpha=class_weights_t, gamma=cfg.focal_gamma)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
