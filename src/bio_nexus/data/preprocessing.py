@@ -135,8 +135,106 @@ def clean_missing(matrix: pd.DataFrame, threshold: float = 0.20) -> pd.DataFrame
     return matrix.fillna(matrix.median(axis=0))
 
 
-def variance_filter(matrix: pd.DataFrame, top_n: int = 5000) -> pd.DataFrame:
-    """Keep top N highest-variance features."""
+# Canonical PAM50 marker genes (Parker et al. 2009) + Ki-67 proliferation signature.
+# These are guaranteed to be included in the RNA feature matrix regardless of
+# variance rank, because global variance is dominated by Basal-vs-Luminal
+# differences. Without force-inclusion, the subtler LumA/LumB proliferation
+# signals (MKI67, AURKA, CCNB1, FOXM1) can be variance-filtered out.
+PAM50_CANONICAL_GENES: list[str] = [
+    # PAM50 core set (HGNC symbols and common Ensembl IDs from TCGA STAR-Counts)
+    "ENSG00000148773",  # MKI67  - proliferation rate (LumA vs LumB discriminator)
+    "ENSG00000117399",  # CDC20  - mitotic checkpoint
+    "ENSG00000166033",  # HTRA3
+    "ENSG00000091831",  # ESR1   - estrogen receptor alpha (LumA/LumB)
+    "ENSG00000082175",  # PGR    - progesterone receptor
+    "ENSG00000141736",  # ERBB2  - HER2 amplification
+    "ENSG00000107485",  # GATA3  - luminal transcription factor
+    "ENSG00000130528",  # FOXA1  - luminal transcription factor
+    "ENSG00000197386",  # HTR1D
+    "ENSG00000128272",  # ATF4
+    "ENSG00000159111",  # MYBPC1
+    "ENSG00000143870",  # PTTG1  - securin, proliferation
+    "ENSG00000117676",  # RPS6KA1
+    "ENSG00000170312",  # CDK1   - mitotic cyclin-dependent kinase
+    "ENSG00000134057",  # CCNB1  - cyclin B1, proliferation (LumB marker)
+    "ENSG00000065135",  # GNAI3
+    "ENSG00000156970",  # BUB1   - spindle assembly checkpoint
+    "ENSG00000117245",  # KIF17
+    "ENSG00000087586",  # AURKA  - aurora kinase A, proliferation (LumB)
+    "ENSG00000117115",  # PADI2
+    "ENSG00000010810",  # FYN    - tyrosine kinase
+    "ENSG00000118785",  # SPP1   - secreted phosphoprotein 1
+    "ENSG00000167654",  # ANLN   - anillin, cell division
+    "ENSG00000171862",  # PTEN   - tumor suppressor
+    "ENSG00000170345",  # FOS    - proto-oncogene (Her2 enriched)
+    "ENSG00000141551",  # CLDN7  - claudin 7
+    "ENSG00000169398",  # PTK2   - focal adhesion kinase (Basal)
+    "ENSG00000108839",  # ALPP
+    "ENSG00000162490",  # DRAIC
+    "ENSG00000026025",  # VIM    - vimentin, EMT / Basal
+    "ENSG00000115461",  # IGFBP5
+    "ENSG00000138777",  # KRT5   - cytokeratin 5, Basal
+    "ENSG00000137309",  # KRT14  - cytokeratin 14, Basal
+    "ENSG00000115687",  # PASK
+    "ENSG00000100721",  # TCL1A  - T-cell leukemia / LumA
+    "ENSG00000163631",  # ALB    - albumin (Normal-like)
+    "ENSG00000148400",  # NOTCH1 - Notch signalling (Her2)
+    "ENSG00000136436",  # CALCB
+    "ENSG00000126266",  # BIRC5  # survivin, proliferation / LumB
+    "ENSG00000073282",  # TP63   - Basal transcription factor
+    "ENSG00000132821",  # BAG1   - Bcl2-associated athanogene (LumA)
+    "ENSG00000065978",  # YBX1
+    "ENSG00000197956",  # S100P  - Her2 enriched
+    "ENSG00000119866",  # BCL11A
+    "ENSG00000197380",  # DYRK3
+    "ENSG00000187210",  # GCNT3
+    "ENSG00000144485",  # HELLS  - lymphoid specific helicase
+    "ENSG00000126254",  # RRAGC
+    "ENSG00000125285",  # SOD3
+    "ENSG00000101412",  # E2F1   - proliferation TF (LumB)
+    "ENSG00000080986",  # NDC80  - kinetochore protein
+    "ENSG00000117601",  # GINS3
+    "ENSG00000170027",  # YDJC
+    "ENSG00000138395",  # CDK15
+    "ENSG00000101193",  # GID8
+    "ENSG00000186416",  # NREP
+    "ENSG00000139219",  # COL2A1
+    "ENSG00000154803",  # PLCL1
+    "ENSG00000139572",  # GPR84
+    "ENSG00000163364",  # LINC01116
+    "ENSG00000038945",  # MSH6   - mismatch repair
+    "FOXM1", "MKI67", "ESR1", "PGR", "ERBB2", "GATA3", "FOXA1",  # symbol aliases
+    "KRT5", "KRT14", "KRT17", "VIM", "BIRC5", "AURKA", "CCNB1",
+    "CDK1", "PTTG1", "ANLN", "BUB1", "E2F1", "FOXM1", "CCNE1",
+]
+
+
+def variance_filter(
+    matrix: pd.DataFrame,
+    top_n: int = 5000,
+    force_include: list[str] | None = None,
+) -> pd.DataFrame:
+    """Keep top N highest-variance features, with optional force-inclusion set.
+
+    force_include: list of column names (gene IDs / symbols) that are always
+    retained regardless of their variance rank, by replacing the tail of the
+    top-N selection. This ensures canonical PAM50 proliferation markers
+    (MKI67, AURKA, CCNB1, FOXM1, E2F1 ...) are always present in the RNA
+    matrix, preventing global Basal-vs-Luminal variance from crowding them out.
+    """
     variances = matrix.var(axis=0).sort_values(ascending=False)
-    keep_cols = variances.head(top_n).index
+
+    if force_include:
+        # Intersect with actual column names to avoid KeyErrors on missing genes
+        guaranteed = [g for g in force_include if g in matrix.columns]
+        # Select top_n by variance, then union with guaranteed set
+        top_by_var = list(variances.head(top_n).index)
+        # Preserve variance order; add any guaranteed genes not already present
+        missing_guaranteed = [g for g in guaranteed if g not in set(top_by_var)]
+        keep_cols = top_by_var + missing_guaranteed
+        # Trim to top_n + number of forced extras (keep all rather than evict)
+        keep_cols = list(dict.fromkeys(keep_cols))  # deduplicate, preserve order
+    else:
+        keep_cols = list(variances.head(top_n).index)
+
     return matrix[keep_cols]

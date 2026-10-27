@@ -25,9 +25,10 @@ import torch.nn.functional as F
 
 try:
     from torch_geometric.nn import GINEConv, GPSConv
+    from torch_geometric.utils import dropout_edge
 except ImportError as e:
     raise ImportError(
-        "torch_geometric.nn.GPSConv not found. This requires a reasonably "
+        "torch_geometric.nn.GPSConv / dropout_edge not found. This requires a reasonably "
         "recent PyTorch Geometric version (GPSConv was added in PyG 2.3+). "
         'Check your version with: python3 -c "import torch_geometric; '
         'print(torch_geometric.__version__)" and upgrade with '
@@ -42,6 +43,9 @@ class GraphTransformerConfig:
     num_layers: int = 3  # number of stacked GPSConv layers
     num_heads: int = 4  # attention heads in the global-attention part of GPSConv
     dropout: float = 0.3  # higher dropout given small cohort (646 patients) - guards overfitting
+    drop_edge_p: float = 0.15  # DropEdge probability (training only). Randomly removes 15% of
+                                # graph edges per forward pass to prevent over-smoothing of
+                                # LumA/LumB embeddings caused by dense cross-subtype ESR1 edges.
     pool: str = "none"  # "none" since nodes ARE patients already - no pooling needed
 
 
@@ -99,10 +103,22 @@ class GraphGPSEncoder(nn.Module):
 
         if edge_weight is None:
             edge_weight = torch.ones(edge_index.size(1), device=x.device, dtype=x.dtype)
-        edge_attr = edge_weight.unsqueeze(-1)  # [num_edges] -> [num_edges, 1] for GINEConv
+
+        # DropEdge (training only): randomly drop 15% of edges per forward pass.
+        # Prevents over-smoothing in local GINEConv layers caused by dense
+        # cross-subtype bridge edges between LumA/LumB patients sharing ESR1 expression.
+        active_edge_index = edge_index
+        active_edge_weight = edge_weight
+        if self.training and self.cfg.drop_edge_p > 0:
+            active_edge_index, edge_mask = dropout_edge(
+                edge_index, p=self.cfg.drop_edge_p, training=True
+            )
+            active_edge_weight = edge_weight[edge_mask]
+
+        edge_attr = active_edge_weight.unsqueeze(-1)  # [num_edges] -> [num_edges, 1] for GINEConv
 
         for gps_layer in self.gps_layers:
-            h = gps_layer(h, edge_index, edge_attr=edge_attr)
+            h = gps_layer(h, active_edge_index, edge_attr=edge_attr)
 
         embeddings = self.output_proj(h)
         embeddings = self.output_norm(embeddings)

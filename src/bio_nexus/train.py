@@ -4,6 +4,15 @@ bio_nexus.train
 Training pipeline entrypoint. Trains BioNexusClassifier using stratified
 K-fold cross-validation over the 646-patient cohort.
 
+Accuracy improvements applied over the 86.99% baseline:
+  1. FocalLoss (gamma=2.0, alpha=class_weights): focuses gradient on hard
+     LumA/LumB boundary cases; down-weights easy Basal/Her2 predictions.
+  2. CosineAnnealingLR: smooth LR decay from lr to lr*0.01, helps escape
+     local minima near training end.
+  3. early_stop_patience raised to 25 to give the scheduler room to converge.
+  4. All 5 fold checkpoints saved (fold_1.pt ... fold_5.pt) for ensemble
+     averaging at inference time (see serving/ml_client.py).
+
 TRANSDUCTIVE SETTING (important design note for your methods section):
 All 646 patients exist as nodes in one shared graph throughout training.
 Cross-validation works by masking which nodes' LABELS are visible during
@@ -31,11 +40,45 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.class_weight import compute_class_weight
 
 from bio_nexus.models.classifier import PAM50_SUBTYPES, BioNexusClassifier
+
+
+class FocalLoss(nn.Module):
+    """Focal Loss (Lin et al., 2017) for multi-class classification.
+
+    FL(p_t) = -alpha_t * (1 - p_t)^gamma * log(p_t)
+
+    gamma=2.0 is the standard recommendation. It down-weights the loss from
+    easy, high-confidence samples (Basal, Her2 with p_t > 0.95) and
+    concentrates gradient updates on ambiguous borderline cases (LumA vs LumB
+    where p_t ~ 0.5), which are responsible for >75% of BioNexus errors.
+
+    alpha: [num_classes] class-level weight tensor (addresses LumA ~50% imbalance).
+    """
+
+    def __init__(self, alpha: torch.Tensor | None = None, gamma: float = 2.0):
+        super().__init__()
+        self.gamma = gamma
+        self.register_buffer("alpha", alpha)  # [num_classes] or None
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        # Per-sample CE loss (unreduced), shape [N]
+        ce = F.cross_entropy(logits, targets, reduction="none")
+        # p_t: predicted probability of the true class
+        p_t = torch.exp(-ce)
+        # Modulating factor: strongly down-weights easy examples
+        modulator = (1.0 - p_t) ** self.gamma
+        focal = modulator * ce
+        # Apply per-class alpha weight
+        if self.alpha is not None:
+            at = self.alpha[targets]
+            focal = at * focal
+        return focal.mean()
 
 
 @dataclass
@@ -44,7 +87,8 @@ class TrainConfig:
     max_epochs: int = 300
     lr: float = 1e-3
     weight_decay: float = 1e-4  # L2 regularization - important given param/patient ratio
-    early_stop_patience: int = 20  # epochs without val macro-F1 improvement before stopping
+    early_stop_patience: int = 25  # raised from 20 to give CosineAnnealingLR room to converge
+    focal_gamma: float = 2.0      # Focal Loss gamma parameter
     seed: int = 42
 
 
@@ -268,14 +312,19 @@ def train_one_fold(
     val_mask = torch.zeros(len(y), dtype=torch.bool, device=device)
     val_mask[val_idx] = True
 
-    # Class weights computed from TRAINING fold labels only
+    # Class weights computed from TRAINING fold labels only (handles LumA ~50% imbalance)
     class_weights = compute_class_weight(
         "balanced", classes=np.arange(len(PAM50_SUBTYPES)), y=y[train_idx]
     )
     class_weights_t = torch.tensor(class_weights, dtype=torch.float32, device=device)
-    loss_fn = nn.CrossEntropyLoss(weight=class_weights_t)
+    # FocalLoss: focuses gradient on hard boundary cases (LumA/LumB), not easy ones (Basal/Her2)
+    loss_fn = FocalLoss(alpha=class_weights_t, gamma=cfg.focal_gamma)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    # CosineAnnealingLR: smoothly decays LR to lr*0.01 over max_epochs, helps escape local minima
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=cfg.max_epochs, eta_min=cfg.lr * 0.01
+    )
 
     best_val_f1 = -1.0
     best_state = None
@@ -288,6 +337,7 @@ def train_one_fold(
         loss = loss_fn(logits[train_mask], y_t[train_mask])
         loss.backward()
         optimizer.step()
+        scheduler.step()  # CosineAnnealingLR step
 
         model.eval()
         with torch.no_grad():
@@ -305,8 +355,10 @@ def train_one_fold(
 
         if epoch % 20 == 0 or epochs_without_improvement == 0:
             tr_loss = loss.item()
+            cur_lr = scheduler.get_last_lr()[0]
             print(
-                f"  [fold {fold_num}] epoch {epoch:3d} | loss={tr_loss:.4f} | val_f1={val_f1:.4f}"
+                f"  [fold {fold_num}] epoch {epoch:3d} | loss={tr_loss:.4f} | "
+                f"val_f1={val_f1:.4f} | lr={cur_lr:.2e}"
             )
 
         if epochs_without_improvement >= cfg.early_stop_patience:

@@ -29,7 +29,10 @@ from sklearn.neighbors import NearestNeighbors
 class GraphConstructionConfig:
     k_neighbors: int = 10
     metric: str = "cosine"  # "cosine" or "correlation"
-    symmetric: bool = True  # symmetrize kNN edges (make undirected)
+    symmetric: bool = True   # symmetrize kNN edges (make undirected)
+    mutual_knn: bool = True  # only keep edge (i,j) if j is ALSO in i's top-k AND i is in j's top-k
+                             # Mutual k-NN breaks spurious bridge edges between LumA/LumB patients
+                             # who share high ESR1 expression but differ in proliferation rate.
     self_loops: bool = False
 
 
@@ -62,9 +65,18 @@ def build_knn_graph(feature_matrix: pd.DataFrame, cfg: GraphConstructionConfig):
     nn.fit(dist)
     _, neighbor_idx = nn.kneighbors(dist)
 
+    # Build adjacency set per node for mutual k-NN check
+    neighbor_sets = [set(neighbor_idx[i]) for i in range(n)]
+
     src, dst, weights = [], [], []
     for i in range(n):
         for j in neighbor_idx[i]:
+            if cfg.mutual_knn:
+                # Mutual k-NN: edge (i,j) only if i is ALSO in j's top-k list.
+                # This removes spurious cross-subtype bridges (e.g. LumA patients
+                # appearing in a LumB patient's top-k purely because both express ESR1).
+                if i not in neighbor_sets[j]:
+                    continue
             src.append(i)
             dst.append(j)
             weights.append(sim[i, j])
