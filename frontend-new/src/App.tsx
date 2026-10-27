@@ -11,7 +11,6 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { BiomarkersPage } from '@/pages/BiomarkersPage';
 import { PathwayAnalysisPage } from '@/pages/PathwayAnalysisPage';
 import { GraphExplorerPage } from '@/pages/GraphExplorerPage';
-import { ModelComparisonPage } from '@/pages/ModelComparisonPage';
 import { NewCasePage } from '@/pages/NewCasePage';
 import { LiveCasePage } from '@/pages/LiveCasePage';
 import { HealthProvider } from '@/lib/health';
@@ -44,7 +43,6 @@ function App() {
               <Route path="/graph-explorer" element={<GraphExplorerPage />} />
               <Route path="/data-explorer" element={<DataExplorerPage />} />
               <Route path="/model-insights" element={<ModelInsightsPage />} />
-              <Route path="/model-comparison" element={<ModelComparisonPage />} />
               <Route path="/cohort-analysis" element={<CohortAnalysisPage />} />
               <Route path="/research" element={<ResearchPage />} />
               <Route path="/settings" element={<SettingsPage />} />
@@ -52,6 +50,7 @@ function App() {
               <Route path="/pathway-analysis" element={<PathwayAnalysisPage />} />
               <Route path="/pathways" element={<Navigate to="/pathway-analysis" replace />} />
               <Route path="/batch-triage" element={<Navigate to="/" replace />} />
+              <Route path="/model-comparison" element={<Navigate to="/" replace />} />
               <Route path="/cost-accuracy" element={<Navigate to="/" replace />} />
               <Route path="/cost-vs-accuracy" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
