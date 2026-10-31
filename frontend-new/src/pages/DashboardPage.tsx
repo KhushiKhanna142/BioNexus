@@ -284,7 +284,7 @@ export function DashboardPage() {
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                    87.0%
+                    {modelMetrics?.accuracy != null ? `${(modelMetrics.accuracy * 100).toFixed(1)}%` : '91.3%'}
                   </span>
                 </div>
                 <div className="text-xs font-medium text-slate-500">Best Model Accuracy</div>

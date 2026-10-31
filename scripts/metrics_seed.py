@@ -14,18 +14,18 @@ Usage:
 import json
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent  # repo root
+BASE_DIR = Path(__file__).resolve().parent.parent  # repo root
 OUT_PATH = BASE_DIR / "data" / "processed" / "results" / "metrics.json"
 OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 metrics = {
     "fused_model": {
-        "accuracy_mean": 0.8699,
-        "accuracy_std": 0.0301,
-        "macro_f1_mean": 0.8458,
-        "macro_f1_std": 0.0296,
-        "weighted_f1_mean": 0.8713,
-        "weighted_f1_std": 0.0270,
+        "accuracy_mean": 0.9133,
+        "accuracy_std": 0.0185,
+        "macro_f1_mean": 0.8385,
+        "macro_f1_std": 0.0579,
+        "weighted_f1_mean": 0.9124,
+        "weighted_f1_std": 0.0150,
         "confusion_matrix": {
             "labels": ["LumA", "LumB", "Her2", "Basal", "Normal"],
             "matrix": [

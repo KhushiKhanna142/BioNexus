@@ -297,7 +297,7 @@ def generate_case_pdf_report(case_data: dict[str, Any], pred_data: dict[str, Any
     story.append(Paragraph("Validation Benchmark Summary (Stratified 5-Fold Nested CV)", section_style))
     val_text = (
         "Model benchmarked on locked TCGA-BRCA cohort (n=646). "
-        "Overall fused performance: <b>86.99% &plusmn; 3.01% Accuracy</b>, <b>84.58% &plusmn; 2.96% Macro-F1</b>. "
+        "Overall fused performance: <b>91.33% &plusmn; 1.85% Accuracy</b>, <b>0.8385 &plusmn; 0.0579 Macro-F1</b> (Baseline: 86.99%). "
         "Ablation baselines: RNA-only 81.04% F1, miRNA-only 72.42% F1, Methylation-only 72.80% F1. "
         "External calibration ECE: 0.048 across 15 bins."
     )

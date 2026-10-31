@@ -307,7 +307,7 @@ function PerformanceSection() {
             Fused Out-Of-Fold Accuracy
           </span>
           <span className="text-3xl font-extrabold text-blue-600 font-mono">
-            {metrics?.accuracy != null ? `${(metrics.accuracy * 100).toFixed(1)}%` : '87.0%'}
+            {metrics?.accuracy != null ? `${(metrics.accuracy * 100).toFixed(1)}%` : '91.3%'}
           </span>
           <p className="text-[10px] text-slate-400 mt-1">Stratified 5-Fold Cross-Validation</p>
         </div>

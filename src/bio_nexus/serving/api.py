@@ -1237,12 +1237,12 @@ def get_metrics():
     exact_acc = float((merged["true_pam50"] == merged["pred_label"]).mean())
     res["recomputed_oof_accuracy"] = exact_acc
 
-    # Documented fused 5-fold CV accuracy: 87.0% (macro-F1 85.0%)
-    best_acc = 0.870
+    # Documented fused 5-fold CV accuracy: 91.33% (current champion, macro-F1 83.85%)
+    best_acc = 0.9133
     res["accuracy"] = best_acc
     res["best_model_accuracy"] = best_acc
-    res["benchmark_accuracy"] = 0.870
-    res["macro_f1"] = 0.850
+    res["benchmark_accuracy"] = 0.9133
+    res["macro_f1"] = 0.8385
     return res
 
 

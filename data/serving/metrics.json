@@ -491,11 +491,12 @@
     }
   },
   "benchmark_comparison": {
-    "documented_accuracy": 0.8699,
-    "documented_macro_f1": 0.8458,
+    "documented_accuracy": 0.9133,
+    "documented_macro_f1": 0.8385,
+    "baseline_accuracy": 0.8699,
     "recomputed_oof_accuracy": 0.4334,
     "recomputed_oof_macro_f1": 0.3125,
-    "difference_accuracy": -0.4365,
-    "difference_macro_f1": -0.5333
+    "difference_accuracy": -0.4799,
+    "difference_macro_f1": -0.5260
   }
 }

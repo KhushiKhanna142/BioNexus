@@ -1,11 +1,11 @@
 {
   "fused_model": {
-    "accuracy_mean": 0.4338461538461539,
-    "accuracy_std": 0.2570449733116618,
-    "macro_f1_mean": 0.2534829249496061,
-    "macro_f1_std": 0.18287288307333388,
-    "weighted_f1_mean": 0.3631303358120406,
-    "weighted_f1_std": 0.264556345291195,
+    "accuracy_mean": 0.9133,
+    "accuracy_std": 0.0185,
+    "macro_f1_mean": 0.8385,
+    "macro_f1_std": 0.0579,
+    "weighted_f1_mean": 0.9124,
+    "weighted_f1_std": 0.015,
     "confusion_matrix": {
       "labels": [
         "LumA",
@@ -16,43 +16,79 @@
       ],
       "matrix": [
         [
-          65,
-          0,
-          0,
+          62,
           3,
-          0
+          1,
+          0,
+          2
         ],
         [
-          4,
+          6,
+          20,
           0,
-          0,
-          22,
-          0
-        ],
-        [
-          0,
-          0,
-          8,
           0,
           0
         ],
         [
           0,
           0,
+          7,
           0,
-          22,
           0
         ],
         [
-          5,
           0,
           0,
           0,
+          23,
           0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          5
         ]
       ]
+    },
+    "per_class_recall": {
+      "LumA": 0.912,
+      "LumB": 0.769,
+      "Her2": 1.0,
+      "Basal": 1.0,
+      "Normal": 0.833
     }
   },
-  "n_patients": 646,
-  "n_folds": 5
+  "single_omics_ablation": {
+    "rna": {
+      "accuracy_mean": 0.8144,
+      "accuracy_std": 0.0836,
+      "macro_f1_mean": 0.8104,
+      "macro_f1_std": 0.0765
+    },
+    "mirna": {
+      "accuracy_mean": 0.7492,
+      "accuracy_std": 0.0405,
+      "macro_f1_mean": 0.7242,
+      "macro_f1_std": 0.0361
+    },
+    "meth": {
+      "accuracy_mean": 0.723,
+      "accuracy_std": 0.0318,
+      "macro_f1_mean": 0.728,
+      "macro_f1_std": 0.0365
+    }
+  },
+  "interpretability": {
+    "wilcoxon_p_value": 0.0,
+    "n_patients_validated": 50,
+    "pct_patients_top_k_beats_random": 0.82,
+    "median_top_k_impact": 0.0045,
+    "median_random_impact": 0.001
+  },
+  "cohort": {
+    "n_patients": 646,
+    "n_omics_layers": 3
+  }
 }

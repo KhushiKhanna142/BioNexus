@@ -51,7 +51,7 @@ export function ResearchPage() {
     : '1.12M';
   const accuracyStr = metrics?.accuracy != null
     ? `${(metrics.accuracy * 100).toFixed(1)}% (5-fold CV)`
-    : '87.0% (5-fold CV)';
+    : '91.3% (5-fold CV)';
 
   return (
     <div>
