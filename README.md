@@ -391,10 +391,6 @@ docker-compose up --build
 
 ```
 BioNexus/
-├── BioNexus_Project_Writeup.md     Symlink to comprehensive scientific whitepaper
-├── docs/
-│   └── PROJECT_WRITEUP.md          Complete 569-line biological & ML specification
-│
 ├── scripts/                        Reproducible Data Pipeline Scripts
 │   ├── patient_cohort.py           Step 1 — Sample sheet parsing & omics intersection
 │   ├── preprocess.py               Step 2 — Platform detection, log2 normalization & filtering

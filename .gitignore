@@ -52,3 +52,7 @@ data/cases/
 frontend/
 frontend_old/
 
+# Internal Documentation & Writeups
+docs/
+MOSAIC_Project_Documentation.docx
+BioNexus_Project_Writeup.md
