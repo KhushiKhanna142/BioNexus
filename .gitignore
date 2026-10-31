@@ -1,71 +1,28 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
-htmlcov/
-.coverage
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Data — DVC-tracked, raw not git-tracked
-/data/raw/*
-!/data/raw/.gitkeep
-/models/*.pt
-/metrics/
+node_modules
+dist
+dist-ssr
+*.local
 
-# Processed model artifacts and graphs needed for Render serving
-/data/processed/*.csv
-/data/processed/*.txt
-/data/processed/final/*.csv
-!/data/processed/final/labels_final.csv
-!/data/processed/final/cohort_funnel.json
-!/data/processed/checkpoints/*.pt
-!/data/processed/graphs/*
-!/data/processed/results/*
-
-# MLflow model registry and artifacts needed for Render serving
-!mlruns/
-!mlruns/**
-mlartifacts/
-
-# DVC
-.dvc/cache/
-.dvc/tmp/
-
-# Notebooks
-.ipynb_checkpoints/
-
-# OS/editor
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-.vscode/
-.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend-new/node_modules/
-frontend-new/dist/
-
-# Local temp files
-prompt_9_full.txt
-*.png
-
-# Security & Secrets (NEVER track)
-.env
-data/security/polygon_ledger.json
-frontend_old/node_modules/
-data/security/vault_master.key
-data/security/vault_salt.txt
-data/security/records/*.enc
-/data/cases/
-~$*
-
-# Scratch and temporary scripts
-scratch_*.py
-check_cohort.py
-scripts/step1_*.py
-scripts/test_*.py
-scripts/verify_*.py
-scripts/check_deps.py
+.vercel
+frontend-new/
+frontend_old/
