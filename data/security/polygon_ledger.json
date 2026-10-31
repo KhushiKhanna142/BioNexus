@@ -1,0 +1,194 @@
+{
+  "0x0de71d945f411e5c1432cfa3e1183a61351ed52295ed92e45ca0911e1d584ea5": [
+    {
+      "patient_hash": "0x0de71d945f411e5c1432cfa3e1183a61351ed52295ed92e45ca0911e1d584ea5",
+      "data_fingerprint": "0x6376dc1a93a0a125a40b987ca35aec048b5b2c4ddcd183ae37b0ac5fb9af2e8f",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-v1",
+      "predicted_subtype": 0,
+      "confidence_bps": 9420,
+      "timestamp": 1790967660,
+      "authority": "0xE93BAF1d3B7f95545BC92c3f281c2eEAE345310F",
+      "tx_hash": "0xe36ac6d72f57856f8c3ce3ec05f998a902f56b203066791acdce710e4ccf7da3",
+      "block_number": 15829100,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0xcea4cf3a7961d78a9426afe3c510deee439e98a05769f6fb88fa3fa16647c691": [
+    {
+      "patient_hash": "0xcea4cf3a7961d78a9426afe3c510deee439e98a05769f6fb88fa3fa16647c691",
+      "data_fingerprint": "0x5f9496e7b672318d0d071714bcd514dfed932cf3fa039b4a664bdb85babc3f0d",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 2,
+      "confidence_bps": 2415,
+      "timestamp": 1790967919,
+      "authority": "0xE93BAF1d3B7f95545BC92c3f281c2eEAE345310F",
+      "tx_hash": "0x92afd1ec8184f10546023d4a949305c528454e4e80cabb5c9d86411686dbf7eb",
+      "block_number": 15829101,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0xd126e89b4759d3ee7a4481303233cfe157e83c4d30ac4201304ca0922e5ba4fe": [
+    {
+      "patient_hash": "0xd126e89b4759d3ee7a4481303233cfe157e83c4d30ac4201304ca0922e5ba4fe",
+      "data_fingerprint": "0xda73f5b770373ed6ecefc63ecbe5bf6eea758c258065511b2045226c54bba1f6",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 3,
+      "confidence_bps": 2191,
+      "timestamp": 1790968255,
+      "authority": "0xE93BAF1d3B7f95545BC92c3f281c2eEAE345310F",
+      "tx_hash": "0xb9909bf5df6ee32f5f6ecb33f1222c0027e58947a3531ba345499a8dfd0e16b6",
+      "block_number": 15829102,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0x6f86c13114782f93145fe35acadc66d2ebafe3a290386ae133a4206eb7381b05": [
+    {
+      "patient_hash": "0x6f86c13114782f93145fe35acadc66d2ebafe3a290386ae133a4206eb7381b05",
+      "data_fingerprint": "0xdae47f342773551ccc7b0cf00c492963f4df1950a39bd07183027e085ca599dc",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 1,
+      "confidence_bps": 2430,
+      "timestamp": 1790968335,
+      "authority": "0xE93BAF1d3B7f95545BC92c3f281c2eEAE345310F",
+      "tx_hash": "0x08cd870d9ae6f1d1e6a8d968ab7e5c4e6a06c8716edc42f5055fae3f3c36307e",
+      "block_number": 15829103,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    },
+    {
+      "patient_hash": "0x6f86c13114782f93145fe35acadc66d2ebafe3a290386ae133a4206eb7381b05",
+      "data_fingerprint": "0xdae47f342773551ccc7b0cf00c492963f4df1950a39bd07183027e085ca599dc",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 1,
+      "confidence_bps": 2430,
+      "timestamp": 1790972531,
+      "authority": "0x9eB1de075392B7c059ABF2f244612090774fab67",
+      "tx_hash": "0x897f6116487ec61d84c1dc800b30aa551fe09c3380a912c5ee3f659575963246",
+      "block_number": 15829106,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0x53875ce092c8fd226d80b72ac54b2d71dc5d33fa9648f65924e5e5dc26409c5e": [
+    {
+      "patient_hash": "0x53875ce092c8fd226d80b72ac54b2d71dc5d33fa9648f65924e5e5dc26409c5e",
+      "data_fingerprint": "0x10e15fc8fe977ad958b4cfb3ae67aeab359cfc135570652d348fe1d190db99f0",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 0,
+      "confidence_bps": 3357,
+      "timestamp": 1790968483,
+      "authority": "0xE93BAF1d3B7f95545BC92c3f281c2eEAE345310F",
+      "tx_hash": "0x8426f35475dffb6a928e32b65d246df1691e780b1007d172c8ffe1dca15e74a0",
+      "block_number": 15829104,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0x2c4ffc7bdbaaaee47747bd42bce2426a176888e7b78baa456ed7eb4a30aea8c8": [
+    {
+      "patient_hash": "0x2c4ffc7bdbaaaee47747bd42bce2426a176888e7b78baa456ed7eb4a30aea8c8",
+      "data_fingerprint": "0x2f3ceae8ae18755d336045f1c7dee740393e10bfd2bb60694180a9585592337f",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 1,
+      "confidence_bps": 2401,
+      "timestamp": 1790970545,
+      "authority": "0xE93BAF1d3B7f95545BC92c3f281c2eEAE345310F",
+      "tx_hash": "0xeb68a9b69990fbba18a1914a147c8495ab3ac3947c2a1c7da8385585141d07c3",
+      "block_number": 15829105,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    },
+    {
+      "patient_hash": "0x2c4ffc7bdbaaaee47747bd42bce2426a176888e7b78baa456ed7eb4a30aea8c8",
+      "data_fingerprint": "0x46216a45e6dc58f690f5ddf03b01a519d18c3bd3cb311879ec3923a76054dfc5",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-v1.0",
+      "predicted_subtype": 0,
+      "confidence_bps": 9450,
+      "timestamp": 1790972498,
+      "authority": "0x9eB1de075392B7c059ABF2f244612090774fab67",
+      "tx_hash": "0x6b947f7b40430da50436a515bceb6b371aa359bc549372d6f5fb56806cc61dfb",
+      "block_number": 49150069,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": true,
+      "polygonscan_url": "https://amoy.polygonscan.com/tx/0x6b947f7b40430da50436a515bceb6b371aa359bc549372d6f5fb56806cc61dfb",
+      "is_revoked": false
+    }
+  ],
+  "0x1265b9cd0e6645de6ff6a6879881608793ead293fd0989b35d77b4c57b8dc837": [
+    {
+      "patient_hash": "0x1265b9cd0e6645de6ff6a6879881608793ead293fd0989b35d77b4c57b8dc837",
+      "data_fingerprint": "0x5260604c678145ebc66661787f122b9d878ee50492363e04837aa4cc496860d6",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 2,
+      "confidence_bps": 2433,
+      "timestamp": 1790972799,
+      "authority": "0x9eB1de075392B7c059ABF2f244612090774fab67",
+      "tx_hash": "0xf8d980c3d06afcb8dd4df651a21cf6510e5acfa6d2b0194594d2c8af2c584958",
+      "block_number": 15829106,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0xc2ec32b96f49ca73fce0a692ed96f6c5d6f8bd74e8d2d79cbcc060d02fce2ba9": [
+    {
+      "patient_hash": "0xc2ec32b96f49ca73fce0a692ed96f6c5d6f8bd74e8d2d79cbcc060d02fce2ba9",
+      "data_fingerprint": "0xdba658f4a59778e8418f882072d1bf5f673dd82b8442e1ee84115aa000a6519f",
+      "omics_input_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "model_version": "GraphGPS-4c26722",
+      "predicted_subtype": 3,
+      "confidence_bps": 2255,
+      "timestamp": 1790973343,
+      "authority": "0x9eB1de075392B7c059ABF2f244612090774fab67",
+      "tx_hash": "0x0734a541d40b0e5c80422073d19add80fe16218448b4332a60c85b73481873f2",
+      "block_number": 15829107,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": false,
+      "polygonscan_url": "https://amoy.polygonscan.com/address/0xE771417C54c4968E7E324925a563a224BD16A30e",
+      "is_revoked": false
+    }
+  ],
+  "0x620f476d9abc98c0b4ed20170b06c8e04c57bb78c44a74a054d65f9642ee9f77": [
+    {
+      "batch_identifier": "0x620f476d9abc98c0b4ed20170b06c8e04c57bb78c44a74a054d65f9642ee9f77",
+      "cohort_name": "TCGA-BRCA",
+      "merkle_root": "0x8d3e8633b1e0fc0d8e3cecddb19fed2e29e7111a488b4b9d1cac3b6871375ffd",
+      "total_records": 646,
+      "timestamp": 1790976137,
+      "authority": "0x9eB1de075392B7c059ABF2f244612090774fab67",
+      "tx_hash": "0xb1be2ec77108a04298fc04f3c4f4b6adb1986f5b814451073944f4d2f0c961ed",
+      "block_number": 49153709,
+      "network": "Polygon Amoy Testnet (Chain ID 80002)",
+      "is_live_chain": true,
+      "polygonscan_url": "https://amoy.polygonscan.com/tx/0xb1be2ec77108a04298fc04f3c4f4b6adb1986f5b814451073944f4d2f0c961ed",
+      "method": "MERKLE_TREE_BATCH_ROOT"
+    }
+  ]
+}
